@@ -91,10 +91,12 @@ Table Editor.
 
 1. Merge `feat/v1` into `main` (open a pull request on GitHub and merge it).
 2. In the Dashboard, open the branch dropdown in the top bar → **Manage branches** → `main` →
-   **View logs**, and check that the three migrations ran: `init`, `storage_media_bucket` and
-   `revoke_data_api_access`.
+   **View logs**, and check that every file in `supabase/migrations/` was applied (`init`,
+   `storage_media_bucket`, `revoke_data_api_access`, `achievement_entrants`,
+   `media_bucket_types`, and any added later).
 3. **Table Editor** should now list the tables (`projects`, `posts`, `people`, ...) and
-   **Storage** a public bucket called `media`.
+   **Storage** a public bucket called `media` (images up to 10 MB, PDFs 20 MB, 3D models 25 MB,
+   videos 50 MB; photos are compressed in the browser before upload, and SVG is not allowed).
 
 Without the integration (or to apply migrations by hand), run from your laptop:
 
