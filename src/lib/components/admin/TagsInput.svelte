@@ -69,7 +69,11 @@
 			next.push(part);
 			added.push(part);
 		}
-		if (!added.length) return false;
+		if (!added.length) {
+			// Everything typed is already there (or the list is full): clear the box anyway.
+			announcement = next.length >= max ? `Up to ${max} tags` : `${parts.join(', ')} is already added`;
+			return true;
+		}
 		tags = next;
 		announcement = `Added ${added.join(', ')}`;
 		onchange?.(tags);

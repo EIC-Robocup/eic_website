@@ -43,11 +43,11 @@ function readNext(form: FormData): string {
 	return safeNext(typeof value === 'string' ? value : null);
 }
 
-export const load: PageServerLoad = async ({ locals, url, setHeaders }) => {
+// No setHeaders here: hooks.server.ts marks every /admin response private, no-store, and the
+// Supabase cookie writer may already have set cache headers for this request.
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const next = safeNext(url.searchParams.get('next'));
 	if (locals.editor) redirect(303, next);
-
-	setHeaders({ 'cache-control': 'private, no-store' });
 
 	// Only in `pnpm dev`: explain why the DEV_AUTH_EMAIL shortcut did not sign you in.
 	let devNotice: string | null = null;

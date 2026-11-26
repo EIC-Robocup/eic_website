@@ -65,7 +65,11 @@
 	const TILTS = [-2.5, 1.5, -1, 2, -2, 1];
 
 	const seoDescription = $derived(
-		[hero.headline, hero.subline, 'Twenty years of competition, how to join, and how to reach us.']
+		[
+			hero.headline,
+			hero.subline,
+			s.achievements.data.heading && `${s.achievements.data.heading}, how to join and how to reach us.`
+		]
 			.filter(Boolean)
 			.join(' ')
 	);

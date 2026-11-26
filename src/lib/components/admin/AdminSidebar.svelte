@@ -157,7 +157,7 @@
 						{displayName}
 					</span>
 					<span class="truncate text-xs leading-4 text-ink-muted">
-						{roleLabel}{#if editor.name}<span> · {editor.email}</span>{/if}
+						{editor.name ? `${roleLabel} · ${editor.email}` : roleLabel}
 					</span>
 				</span>
 				<form method="POST" action="/admin/logout" class="shrink-0">

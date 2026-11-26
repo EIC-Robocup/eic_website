@@ -80,7 +80,12 @@
 			{#if trigger}
 				{@render trigger(props)}
 			{:else}
-				<AdminButton {...props} variant={variant === 'outline' ? 'danger' : 'danger-text'} {disabled}>
+				<AdminButton
+					{...props}
+					variant={variant === 'outline' ? 'danger' : 'danger-text'}
+					class="self-start"
+					{disabled}
+				>
 					{triggerLabel}
 				</AdminButton>
 			{/if}
@@ -101,7 +106,10 @@
 				<input type="hidden" name={key} {value} />
 			{/each}
 			<AlertDialog.Footer>
-				<AlertDialog.Cancel class="h-11 rounded-sm px-4" disabled={form.pending}>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Cancel
+					class="h-11 rounded-sm border-line-strong bg-transparent px-4 hover:border-ink dark:border-line-strong dark:bg-transparent dark:hover:bg-transparent"
+					disabled={form.pending}>Cancel</AlertDialog.Cancel
+				>
 				<AdminButton type="submit" pending={form.pending}>
 					{confirmLabel}
 				</AdminButton>

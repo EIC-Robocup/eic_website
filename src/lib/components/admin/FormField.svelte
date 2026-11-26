@@ -57,11 +57,20 @@
 	const hintId = $derived(`${controlId}-hint`);
 	const errorId = $derived(`${controlId}-error`);
 
-	const attrs: FieldAttrs = $derived({
-		id: controlId,
-		'aria-describedby': [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined,
-		'aria-invalid': error ? 'true' : undefined
-	});
+	// One stable object with getters, not a $derived object: when a spread source is replaced,
+	// Svelte re-reads every prop of the control, which would wipe text typed into an Input
+	// whose `value` isn't bound (e.g. when this field's error appears or clears).
+	const attrs: FieldAttrs = {
+		get id() {
+			return controlId;
+		},
+		get 'aria-describedby'() {
+			return [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined;
+		},
+		get 'aria-invalid'() {
+			return error ? ('true' as const) : undefined;
+		}
+	};
 </script>
 
 <div class={['flex min-w-0 flex-col gap-1.5', className]}>
