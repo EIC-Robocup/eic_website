@@ -215,6 +215,7 @@
 }
 .post-body ol {
 	padding-left: 34px;
+	list-style: decimal;
 }
 .post-body ol > li::marker {
 	color: var(--eic-ink-muted);
