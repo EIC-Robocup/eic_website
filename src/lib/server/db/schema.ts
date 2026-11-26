@@ -289,6 +289,11 @@ export const messages = pgTable(
 		body: text('body').notNull(),
 		readAt: timestamp('read_at', { withTimezone: true }),
 		archived: boolean('archived').notNull().default(false),
+		/**
+		 * Keyed hash of the sender's IP address (clientHash in #lib/server/rate-limit.ts), for the
+		 * form's per-address limit. Never the address itself; cleared after a day by /api/health.
+		 */
+		ipHash: text('ip_hash'),
 		createdAt
 	},
 	(t) => [
@@ -296,8 +301,24 @@ export const messages = pgTable(
 			'messages_topic_check',
 			sql`${t.topic} in ('joining', 'sponsorship', 'research', 'open-source', 'other')`
 		),
-		index('messages_created_idx').on(t.createdAt)
+		index('messages_created_idx').on(t.createdAt),
+		index('messages_ip_created_idx').on(t.ipHash, t.createdAt)
 	]
+).enableRLS();
+
+/**
+ * Fixed window counters for limits that must hold across server instances: sign in emails and
+ * codes (see #lib/server/rate-limit.ts). Keys carry hashes, never raw addresses. Rows older
+ * than a day are deleted by the daily /api/health cron.
+ */
+export const rateLimits = pgTable(
+	'rate_limits',
+	{
+		key: text('key').primaryKey(),
+		windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
+		hits: integer('hits').notNull().default(1)
+	},
+	(t) => [index('rate_limits_window_idx').on(t.windowStart)]
 ).enableRLS();
 
 /** Feed for "Recent edits" on the admin dashboard. */
@@ -329,3 +350,4 @@ export type Media = typeof media.$inferSelect;
 export type SiteSection = typeof siteSections.$inferSelect;
 export type Activity = typeof activity.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type RateLimit = typeof rateLimits.$inferSelect;

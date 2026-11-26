@@ -36,6 +36,13 @@
       "when": 1795725530074,
       "tag": "20261126203850_media_bucket_types",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795737450202,
+      "tag": "20261126235730_rate_limits",
+      "breakpoints": true
     }
   ]
 }
