@@ -28,11 +28,11 @@
 		padding?: 'default' | 'sm' | 'none';
 		/** `md` 18px titles (default), `sm` 16px (aside panels). */
 		size?: 'md' | 'sm';
-		/** Put the description under the title instead of on the right. */
+		/** Put the description under the title instead of on the right (automatic when there are actions). */
 		stacked?: boolean;
 		/** Heading level of the title. */
 		level?: 2 | 3;
-		/** The element: `section` (default), `div`, `aside`, `form`... Panels with a title are labelled by it. */
+		/** The element: `section` (default), `div`, `aside` or `article`. Panels with a title are labelled by it. */
 		as?: 'section' | 'div' | 'aside' | 'article';
 		id?: string;
 		class?: string;
@@ -57,6 +57,7 @@
 	const uid = $props.id();
 	const headingId = $derived(`${id ?? uid}-title`);
 	const hasHeader = $derived(Boolean(header || title || actions || description));
+	const isStacked = $derived(stacked || Boolean(description && actions));
 	const pad = $derived(padding === 'none' ? '' : padding === 'sm' ? 'p-[18px]' : 'p-4 sm:p-[22px]');
 	const gap = $derived(padding === 'sm' ? 'gap-3.5' : 'gap-4 sm:gap-[18px]');
 </script>
@@ -83,7 +84,7 @@
 			{#if header}
 				{@render header()}
 			{:else}
-				<div class={['flex min-w-0 gap-x-2.5 gap-y-0.5', stacked ? 'flex-col' : 'flex-wrap items-center']}>
+				<div class={['flex min-w-0 gap-x-2.5 gap-y-0.5', isStacked ? 'flex-col' : 'flex-wrap items-center']}>
 					{#if title}
 						<div class="flex items-center gap-2.5">
 							{#if number}<span class="text-label text-brand-text">{number}</span>{/if}
@@ -99,11 +100,11 @@
 							</svelte:element>
 						</div>
 					{/if}
-					{#if description && stacked}
+					{#if description && isStacked}
 						<p class="m-0 text-xs leading-[18px] text-ink-muted">{description}</p>
 					{/if}
 				</div>
-				{#if description && !stacked}
+				{#if description && !isStacked}
 					<p class="m-0 text-xs leading-[18px] text-ink-muted">{description}</p>
 				{/if}
 				{#if actions}
