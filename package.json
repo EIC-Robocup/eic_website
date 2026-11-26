@@ -15,6 +15,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"preview:vercel": "NODE_OPTIONS=--no-experimental-require-module vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -29,7 +30,7 @@
 		"drizzle-orm": "0.45.4",
 		"marked": "^18.3.0",
 		"postgres": "^4.1.1",
-		"sanitize-html": "^2.18.2",
+		"sanitize-html": "^2.17.5",
 		"valibot": "^1.5.0"
 	},
 	"devDependencies": {

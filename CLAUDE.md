@@ -14,7 +14,14 @@ pnpm build          # production build (adapter-vercel)
 pnpm db:generate    # schema.ts -> new SQL migration in supabase/migrations
 pnpm db:migrate     # apply migrations to DATABASE_URL
 pnpm db:seed        # load supabase/seed.sql into DATABASE_URL (first-time content)
+pnpm preview:vercel # preview the build the way Vercel runs it (no require() of ES modules)
 ```
+
+Vercel's function runtime cannot `require()` an ES module, which Node 24 otherwise allows. A
+CommonJS package that requires an ESM-only dependency works locally and crashes on Vercel with
+`ERR_REQUIRE_ESM` (this happened with `sanitize-html` 2.18 + `htmlparser2` 12, so `sanitize-html` is
+pinned to 2.17.5). After adding a server dependency, run `pnpm build && pnpm preview:vercel` and
+load the pages that use it.
 
 ## SvelteKit 3: what differs from Kit 2
 
