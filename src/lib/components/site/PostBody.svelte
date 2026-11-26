@@ -101,7 +101,7 @@
 	<Dialog.Root bind:open>
 		<Dialog.Content
 			showCloseButton={false}
-			class="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[min(1400px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-lg border border-line bg-surface-000 p-0 ring-0 sm:max-w-[min(1400px,calc(100vw-2rem))]"
+			class="eic-lightbox flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[min(1400px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-lg border border-line bg-surface-000 p-0 ring-0 sm:max-w-[min(1400px,calc(100vw-2rem))]"
 			{onkeydown}
 		>
 			<div class="relative flex min-h-0 flex-1 items-center justify-center bg-surface-000 p-2 sm:p-4">

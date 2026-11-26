@@ -125,7 +125,7 @@ export function embedHtml(embed: Embed, opts: { title?: string; caption?: string
 	}
 
 	const provider = embed.kind === 'youtube' ? 'YouTube' : 'Vimeo';
-	const label = title || `Video on ${provider}`;
+	const label = title || 'Video';
 	const poster =
 		embed.kind === 'youtube'
 			? `<img class="embed-thumb" src="https://i.ytimg.com/vi/${embed.id}/hqdefault.jpg" alt="" loading="lazy" decoding="async" width="480" height="360">`
@@ -140,8 +140,8 @@ export function embedHtml(embed: Embed, opts: { title?: string; caption?: string
 		`<a class="embed-poster" href="${escapeHtml(embed.url)}"${NEW_TAB}>` +
 		poster +
 		`<span class="embed-play" aria-hidden="true"></span>` +
-		`<span class="embed-meta"><span class="embed-provider">${provider}</span><span class="embed-title">${escapeHtml(label)}</span></span>` +
-		`<span class="sr-only">Play video: ${escapeHtml(label)}, ${provider}</span>` +
+		`<span class="embed-meta"><span class="embed-provider">${provider}</span>${title ? `<span class="embed-title">${escapeHtml(title)}</span>` : ''}</span>` +
+		`<span class="sr-only">Play video${title ? `: ${escapeHtml(title)}` : ''} (${provider})</span>` +
 		`</a>${caption}</figure>`
 	);
 }

@@ -154,6 +154,7 @@
 	color: var(--eic-ink);
 	font-family: var(--font-mono);
 	font-size: 0.84em;
+	font-variant-ligatures: none;
 	overflow-wrap: anywhere;
 }
 
@@ -301,11 +302,34 @@
 .post-body details > summary {
 	display: flex;
 	align-items: center;
+	gap: 12px;
 	min-height: 44px;
 	cursor: pointer;
+	list-style: none;
 	color: var(--eic-ink);
 	font-size: 16px;
 	font-weight: 600;
+}
+.post-body details > summary::-webkit-details-marker {
+	display: none;
+}
+.post-body details > summary::before {
+	content: '';
+	width: 7px;
+	height: 7px;
+	flex: none;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg);
+	transition: transform 120ms ease-out;
+}
+.post-body details[open] > summary::before {
+	transform: rotate(45deg);
+}
+.post-body details > summary:focus-visible {
+	outline: 2px solid var(--eic-focus);
+	outline-offset: 2px;
+	border-radius: 4px;
 }
 .post-body details[open] > summary {
 	margin-bottom: 4px;
@@ -584,6 +608,7 @@
 	font-family: var(--font-mono);
 	font-size: 13.5px;
 	line-height: 22px;
+	font-variant-ligatures: none;
 	tab-size: 4;
 }
 @media (width >= 40rem) {
@@ -652,14 +677,12 @@
 	white-space: pre;
 }
 .post-body .mermaid-diagram {
-	display: flex;
-	justify-content: center;
 	min-height: 40px;
 }
 .post-body .mermaid-diagram svg {
 	display: block;
-	max-width: 100%;
 	height: auto;
+	margin-inline: auto;
 }
 .post-body .mermaid-details {
 	margin: 16px 0 0;
@@ -1110,6 +1133,11 @@
 	padding: 0 4px;
 	font-family: var(--font-mono);
 	text-decoration: none;
+}
+
+/* The lightbox (PostBody) is portalled to <body>: darken its overlay more than a dialog's. */
+[data-slot='dialog-overlay']:has(~ .eic-lightbox) {
+	background: rgba(0, 0, 0, 0.86);
 }
 
 @media (prefers-reduced-motion: reduce) {

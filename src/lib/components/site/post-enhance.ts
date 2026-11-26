@@ -216,14 +216,14 @@ function litePlayers(root: HTMLElement): Cleanup {
 		const poster = figure.querySelector<HTMLAnchorElement>('a.embed-poster');
 		const player = playerUrl(figure);
 		if (!poster || !player) continue;
-		const title = figure.dataset.title || 'Video';
+		const title = figure.dataset.title && figure.dataset.title !== 'Video' ? figure.dataset.title : '';
 		const provider = figure.dataset.provider === 'vimeo' ? 'Vimeo' : 'YouTube';
 
 		// The link becomes a real button that plays in place.
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.className = 'embed-poster';
-		button.setAttribute('aria-label', `Play video: ${title} (${provider})`);
+		button.setAttribute('aria-label', `Play video${title ? `: ${title}` : ''} (${provider})`);
 		for (const child of [...poster.childNodes]) {
 			if (child instanceof HTMLElement && child.classList.contains('sr-only')) continue;
 			button.append(child);
@@ -239,7 +239,7 @@ function litePlayers(root: HTMLElement): Cleanup {
 			const iframe = document.createElement('iframe');
 			iframe.className = 'embed-frame';
 			iframe.src = player.src;
-			iframe.title = `${title} (${provider})`;
+			iframe.title = `${title || 'Video'} (${provider})`;
 			iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
 			iframe.allowFullscreen = true;
 			iframe.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -269,6 +269,8 @@ function loadMermaid(): Promise<Mermaid> {
 		mermaid.initialize({
 			startOnLoad: false,
 			securityLevel: 'strict',
+			// Hairlines, no shadows (brand book).
+			themeCSS: '.node rect, .node polygon, .node circle, .node path, .cluster rect { filter: none !important; }',
 			theme: 'base',
 			fontFamily: "'Inter Variable', Inter, system-ui, sans-serif",
 			themeVariables: {
@@ -386,6 +388,15 @@ function diagrams(root: HTMLElement): Cleanup {
 				const first = source.trim().split('\n')[0].trim();
 				figure.setAttribute('aria-label', `Diagram (${first.slice(0, 60)}). The source is below.`);
 				figure.innerHTML = svg;
+				// Natural size, shrinking to at most 65% on narrow screens; beyond that the
+				// block scrolls sideways so labels stay readable on phones.
+				const drawing = figure.querySelector('svg');
+				const natural = drawing?.viewBox?.baseVal?.width ?? 0;
+				if (drawing && natural > 0) {
+					drawing.style.width = '100%';
+					drawing.style.maxWidth = `${Math.round(natural)}px`;
+					drawing.style.minWidth = `${Math.round(Math.min(natural, natural * 0.65))}px`;
+				}
 				pre.replaceWith(figure);
 				details.append(pre);
 				block.append(details);
