@@ -3,18 +3,21 @@
 	the action answers with errors or the thank you note). With JavaScript it checks the
 	fields first, shows errors next to them, and swaps in the thank you note in place.
 
-	Controls are the shadcn-svelte Input, Textarea, Label and Button with the EIC sizes. The
-	topic stays a native <select>: the shadcn Select needs JavaScript to open, and this form
-	must work without it.
+	Controls are the shadcn-svelte Field, Input, Textarea, Select and Button with the EIC sizes.
+	The topic is a native <select> in the server-rendered page and becomes the shadcn Select once
+	the page is interactive: the shadcn Select needs JavaScript to open, and this form must work
+	without it. The Select submits through its hidden input under the same name.
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from './$types';
-	import { MESSAGE_TOPIC_OPTIONS } from '#lib/content/labels.ts';
+	import { MESSAGE_TOPIC_LABELS, MESSAGE_TOPIC_OPTIONS } from '#lib/content/labels.ts';
+	import type { MessageTopic } from '#lib/server/db/schema.ts';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Field from '#lib/components/ui/field/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
-	import { Label } from '#lib/components/ui/label/index.js';
+	import * as Select from '#lib/components/ui/select/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { cn } from '#lib/utils.js';
 	import {
@@ -127,12 +130,13 @@
 		document.getElementById(ids.name)?.focus();
 	}
 
-	const fieldClass = 'flex min-w-0 flex-col gap-2';
+	const fieldClass = 'min-w-0 gap-2';
 	const labelClass = 'text-sm leading-5 font-medium text-ink';
 	/** The EIC control: 48px tall, 6px radius, line-strong border on the page colour. */
 	const controlClass =
 		'min-h-12 rounded-sm border-line-strong bg-surface-100 px-3.5 py-3 text-base leading-6 text-ink shadow-none hover:border-ink md:text-base dark:bg-surface-100';
 	const errorClass = 'm-0 text-sm leading-5 text-brand-text';
+	const topicLabel = $derived(MESSAGE_TOPIC_LABELS[topic as MessageTopic] ?? 'Choose a topic');
 </script>
 
 {#if sent}
@@ -163,11 +167,7 @@
 		<p class="m-0 max-w-[32em] text-base leading-[26px] text-ink-muted">
 			Thanks. We read every message and reply within a week.
 		</p>
-		<Button
-			variant="outline"
-			onclick={sendAnother}
-			class="mt-2 h-auto min-h-12 rounded-sm border-line-strong bg-transparent px-[22px] text-[15px] leading-5 text-ink shadow-none hover:border-ink hover:bg-transparent dark:border-line-strong dark:bg-transparent dark:hover:bg-transparent"
-		>
+		<Button variant="outline-ink" size="site-lg" onclick={sendAnother} class="mt-2">
 			Send another message
 		</Button>
 	</div>
@@ -202,8 +202,8 @@
 			</p>
 		{/if}
 
-		<div class={fieldClass}>
-			<Label for={ids.name} class={labelClass}>Name</Label>
+		<Field.Field class={fieldClass}>
+			<Field.Label for={ids.name} class={labelClass}>Name</Field.Label>
 			<Input
 				{...fieldAttrs('name')}
 				class={controlClass}
@@ -214,11 +214,11 @@
 				maxlength={LIMITS.name}
 				value={values.name}
 			/>
-			{#if errors.name}<p id={errorId('name')} class={errorClass}>{errors.name}</p>{/if}
-		</div>
+			{#if errors.name}<Field.Error id={errorId('name')} class={errorClass}>{errors.name}</Field.Error>{/if}
+		</Field.Field>
 
-		<div class={fieldClass}>
-			<Label for={ids.email} class={labelClass}>Email</Label>
+		<Field.Field class={fieldClass}>
+			<Field.Label for={ids.email} class={labelClass}>Email</Field.Label>
 			<Input
 				{...fieldAttrs('email')}
 				class={controlClass}
@@ -230,11 +230,33 @@
 				maxlength={LIMITS.email}
 				value={values.email}
 			/>
-			{#if errors.email}<p id={errorId('email')} class={errorClass}>{errors.email}</p>{/if}
-		</div>
+			{#if errors.email}<Field.Error id={errorId('email')} class={errorClass}>{errors.email}</Field.Error>{/if}
+		</Field.Field>
 
-		<div class={['col-span-full', fieldClass]}>
-			<Label for={ids.topic} class={labelClass}>I am interested in</Label>
+		<Field.Field class={cn('col-span-full', fieldClass)}>
+			<Field.Label for={ids.topic} class={labelClass}>I am interested in</Field.Label>
+			{#if enhanced}
+				<Select.Root type="single" name={FIELD.topic} required bind:value={topic}>
+					<Select.Trigger
+						{...fieldAttrs('topic')}
+						class={cn(
+							controlClass,
+							'w-full cursor-pointer justify-between gap-3 pr-4 pl-3.5 data-[size=default]:h-auto dark:hover:bg-surface-100 [&>svg]:size-3.5'
+						)}
+					>
+						<span data-slot="select-value">{topicLabel}</span>
+					</Select.Trigger>
+					<Select.Content class="rounded-sm border border-line bg-surface-200 shadow-none ring-0">
+						{#each MESSAGE_TOPIC_OPTIONS as option (option.value)}
+							<Select.Item
+								value={option.value}
+								label={option.label}
+								class="min-h-11 rounded-xs pl-3 text-base"
+							/>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			{:else}
 			<div class="relative">
 				<!-- Same look as the shadcn Input (focus ring, invalid state), but native. -->
 				<select
@@ -264,11 +286,12 @@
 					aria-hidden="true"><path d="M3 5.5 L7 9.5 L11 5.5" /></svg
 				>
 			</div>
-			{#if errors.topic}<p id={errorId('topic')} class={errorClass}>{errors.topic}</p>{/if}
-		</div>
+			{/if}
+			{#if errors.topic}<Field.Error id={errorId('topic')} class={errorClass}>{errors.topic}</Field.Error>{/if}
+		</Field.Field>
 
-		<div class={['col-span-full', fieldClass]}>
-			<Label for={ids.message} class={labelClass}>Message</Label>
+		<Field.Field class={cn('col-span-full', fieldClass)}>
+			<Field.Label for={ids.message} class={labelClass}>Message</Field.Label>
 			<Textarea
 				{...fieldAttrs('message')}
 				class={cn(controlClass, 'field-sizing-fixed min-h-[148px] resize-y')}
@@ -279,14 +302,18 @@
 				maxlength={LIMITS.messageMax}
 				value={values.message}
 			/>
-			{#if errors.message}<p id={errorId('message')} class={errorClass}>{errors.message}</p>{/if}
-		</div>
+			{#if errors.message}<Field.Error id={errorId('message')} class={errorClass}
+					>{errors.message}</Field.Error
+				>{/if}
+		</Field.Field>
 
 		<div class="col-span-full flex justify-end">
 			<Button
 				type="submit"
+				variant="brand"
+				size="site-lg"
 				disabled={pending}
-				class="h-auto min-h-12 w-full rounded-sm px-6 text-[15px] leading-5 hover:bg-brand-hover disabled:cursor-progress disabled:opacity-70 sm:w-auto"
+				class="w-full px-6 disabled:cursor-progress disabled:opacity-70 sm:w-auto"
 			>
 				{pending ? 'Sending…' : 'Send message'}
 			</Button>

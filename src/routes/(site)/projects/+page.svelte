@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Separator } from '#lib/components/ui/separator/index.js';
 	import FilterPills from '#lib/components/site/FilterPills.svelte';
 	import Figure from '#lib/components/site/Figure.svelte';
 	import HeroBand from '#lib/components/site/HeroBand.svelte';
@@ -97,7 +98,7 @@
 		<div class="flex items-center gap-3">
 			<SecNo no={1} />
 			<h2 id="builds-title" class="text-label m-0 text-ink-muted">Builds</h2>
-			<span aria-hidden="true" class="h-px w-16 shrink-0 bg-line-strong"></span>
+			<Separator decorative class="bg-line-strong data-horizontal:w-16" />
 		</div>
 		{#if data.projects.length}
 			<FilterPills label="Filter projects" {options} bind:value={filter} />

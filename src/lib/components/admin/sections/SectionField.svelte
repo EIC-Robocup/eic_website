@@ -1,15 +1,16 @@
 <!--
 	One field of a page section, generated from its definition in src/lib/content/sections.ts:
-	text, textarea, url, toggle, link { label, href }, image { url, alt }, tags, or a list of
-	objects with scalar sub-fields. Nothing here has a `name`: the Pages editor submits the
-	whole section as JSON. Errors are keyed by path within the section (`primaryCta.href`,
-	`items.2.value`), as `validateSection` returns them.
+	text, textarea, url, select, toggle, link { label, href }, image { url, alt }, tags, or a
+	list of objects with scalar sub-fields (which can be shown only for some values of another
+	sub-field, `showWhen`, and get a live preview line, `preview`). Nothing here has a `name`:
+	the Pages editor submits the whole section as JSON. Errors are keyed by path within the
+	section (`primaryCta.href`, `items.2.value`), as `validateSection` returns them.
 
 	<SectionField {field} bind:value={draft.data[field.key]} errors={errors} />
 -->
 <script lang="ts">
 	import LinkIcon from '@lucide/svelte/icons/link';
-	import type { Field, ImageValue, LinkValue } from '#lib/content/sections.ts';
+	import { isFieldShown, type Field, type ImageValue, type LinkValue, type ScalarField } from '#lib/content/sections.ts';
 	import * as InputGroup from '#lib/components/ui/input-group/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -21,6 +22,7 @@
 	import ToggleRow from '../ToggleRow.svelte';
 	import { hintClass, inputClass, labelClass } from '../styles.ts';
 	import ScalarControl from './ScalarControl.svelte';
+	import { getRowPreviewers } from './preview.ts';
 	import { LIMITS, emptyItem } from './values.ts';
 
 	type Row = Record<string, unknown>;
@@ -65,10 +67,16 @@
 	const SWITCH_CLASS =
 		'h-6 w-10 px-[2px] data-unchecked:bg-line dark:data-unchecked:bg-line [&>[data-slot=switch-thumb]]:size-[18px]! [&>[data-slot=switch-thumb]]:bg-white! data-checked:[&>[data-slot=switch-thumb]]:translate-x-4!';
 
+	const previewers = getRowPreviewers();
+
 	const listField = $derived(field.type === 'list' ? field : null);
 	const compactRows = $derived((listField?.fields.length ?? 0) <= 2);
+	/** Rows whose controls come and go (showWhen) flow and wrap instead of keeping columns. */
+	const flowRows = $derived(Boolean(listField?.fields.some((sub) => sub.showWhen)));
+	const preview = $derived(listField?.preview ? previewers[listField.preview] : undefined);
 	const rowClass = $derived.by(() => {
 		if (!listField) return '';
+		if (flowRows) return 'flex min-w-0 flex-1 flex-wrap items-start gap-3';
 		const subs = listField.fields;
 		if (subs.length === 1) return 'grid min-w-0 flex-1 gap-2.5';
 		if (subs.length === 2) {
@@ -79,6 +87,14 @@
 		return 'grid min-w-0 flex-1 gap-x-3 gap-y-3 sm:grid-cols-2';
 	});
 	const noun = $derived(listField ? listField.itemLabel.charAt(0).toUpperCase() + listField.itemLabel.slice(1) : '');
+
+	/** Widths of the controls in a flowing row: short selects and values, a wide label. */
+	function flowClass(sub: ScalarField): string | undefined {
+		if (!flowRows) return undefined;
+		if (sub.type === 'select') return 'min-w-0 flex-[1_1_10rem] sm:flex-[0_0_11rem]';
+		if (sub.key === 'value') return 'min-w-0 flex-[1_1_8rem] sm:max-w-[10rem]';
+		return 'min-w-0 flex-[3_1_14rem]';
+	}
 	const listMax = $derived(listField?.max ?? LIMITS.list);
 </script>
 
@@ -172,7 +188,7 @@
 				{/if}
 			{/snippet}
 			{#snippet row(item, index)}
-				{#each field.fields as sub (sub.key)}
+				{#each field.fields.filter((sub) => isFieldShown(sub, item)) as sub (sub.key)}
 					{@const path = `${field.key}.${index}.${sub.key}`}
 					{@const subError = errors[path]}
 					{@const name = `${noun} ${index + 1} ${sub.label.toLowerCase()}`}
@@ -202,7 +218,7 @@
 							{/if}
 						</div>
 					{:else}
-						<FormField label={sub.label} hint={sub.hint} error={subError}>
+						<FormField label={sub.label} hint={sub.hint} error={subError} class={flowClass(sub)}>
 							{#snippet children(attrs)}
 								<ScalarControl
 									field={sub}
@@ -213,6 +229,24 @@
 						</FormField>
 					{/if}
 				{/each}
+				{#if preview}
+					{@const shown = preview(item, index, items)}
+					<p
+						class="m-0 mb-3 flex min-w-0 basis-full flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-sm bg-surface-100 px-3 py-2 text-xs leading-[18px] text-ink-muted [grid-column:1/-1]"
+					>
+						<span class="sr-only">{noun} {index + 1} </span><span class="text-label text-[11px]">Shows</span>
+						{#if shown.value}
+							<span
+								class={[
+									'font-display text-lg leading-none font-medium tracking-[-0.02em] break-words',
+									shown.highlight ? 'text-brand-text' : 'text-ink'
+								]}>{shown.value}</span
+							>
+							{#if shown.label}<span class="text-label min-w-0 text-[11px] break-words">{shown.label}</span>{/if}
+						{/if}
+						{#if shown.note}<span class="min-w-0">{shown.note}</span>{/if}
+					</p>
+				{/if}
 			{/snippet}
 		</ListEditor>
 		{#if error}<p class="m-0 text-xs leading-[18px] text-brand-text">{error}</p>{/if}

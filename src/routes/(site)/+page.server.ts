@@ -1,7 +1,8 @@
+import { resolveStats } from '#lib/content/stats.ts';
 import { getPageSections } from '#lib/server/content.ts';
 import {
-	countVisiblePeople,
 	getFeaturedProject,
+	getSiteCounts,
 	listFeaturedPeople,
 	listProjects,
 	listPublishedPosts
@@ -23,13 +24,14 @@ async function orEmpty<T>(what: string, query: Promise<T>, fallback: T): Promise
 }
 
 export const load: PageServerLoad = async () => {
-	const [sections, featuredRow, projects, posts, people, peopleCount] = await Promise.all([
+	const [sections, featuredRow, projects, posts, people, counts] = await Promise.all([
 		getPageSections('home'),
 		orEmpty('the featured project', getFeaturedProject(), null),
 		orEmpty('projects', listProjects(), []),
 		orEmpty('posts', listPublishedPosts({ limit: 3 }), []),
 		orEmpty('people', listFeaturedPeople(), []),
-		orEmpty('the people count', countVisiblePeople(), 0)
+		// null: the numbers strip falls back to the typed values.
+		orEmpty('the site numbers', getSiteCounts(), null)
 	]);
 
 	// No project marked featured: the first one in the Projects order takes the big card.
@@ -48,9 +50,10 @@ export const load: PageServerLoad = async () => {
 		meta: cardMeta(featuredSource)
 	};
 
+	// Earlier builds: not featured and not ongoing, in the Projects order.
 	const older = sections.olderRobots.enabled
 		? projects
-				.filter((p) => p.id !== featured?.id)
+				.filter((p) => p.id !== featured?.id && !p.featured && p.status !== 'ongoing')
 				.slice(0, 3)
 				.map((p) => ({
 					slug: p.slug,
@@ -66,10 +69,11 @@ export const load: PageServerLoad = async () => {
 
 	return {
 		sections,
+		stats: resolveStats(sections.stats.data.items, counts),
 		featured,
 		older,
 		posts: sections.stories.enabled ? posts : [],
 		people: sections.people.enabled ? people : [],
-		peopleCount
+		peopleCount: counts?.people ?? 0
 	};
 };

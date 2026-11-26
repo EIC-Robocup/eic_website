@@ -9,6 +9,9 @@
 	import Seo from '#lib/components/site/Seo.svelte';
 	import Tag from '#lib/components/site/Tag.svelte';
 	import TitleBlock from '#lib/components/site/TitleBlock.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as InputGroup from '#lib/components/ui/input-group/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
 	import { POST_CATEGORY_OPTIONS } from '#lib/content/labels.ts';
 	import RssLink from './RssLink.svelte';
 	import type { PageProps } from './$types';
@@ -206,31 +209,35 @@
 						value={data.filters.category}
 					/>{/if}
 				{#if data.filters.tag}<input type="hidden" name="tag" value={data.filters.tag} />{/if}
-				<label
-					class="flex min-h-11 w-full items-center gap-2 rounded-sm border border-line-strong bg-surface-200 px-3.5 transition-colors duration-150 focus-within:border-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus hover:border-ink sm:w-[240px]"
+				<Label for="blog-search" class="sr-only">Search posts</Label>
+				<InputGroup.Root
+					class="h-auto min-h-11 w-full rounded-sm border-line-strong bg-surface-200 px-3.5 shadow-none transition-colors duration-150 hover:border-ink focus-within:border-ink focus-within:outline-2 focus-within:outline-solid focus-within:outline-offset-2 focus-within:outline-focus has-[[data-slot=input-group-control]:focus-visible]:border-ink has-[[data-slot=input-group-control]:focus-visible]:ring-0 sm:w-[240px] dark:bg-surface-200"
 				>
-					<svg
-						width="18"
-						height="18"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="var(--eic-ink-muted)"
-						stroke-width="1.5"
-						aria-hidden="true"
-						class="shrink-0"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg
-					>
-					<span class="sr-only">Search posts</span>
-					<input
+					<InputGroup.Addon class="p-0 pr-0.5">
+						<svg
+							width="18"
+							height="18"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="var(--eic-ink-muted)"
+							stroke-width="1.5"
+							aria-hidden="true"
+							class="size-[18px] shrink-0"
+							><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg
+						>
+					</InputGroup.Addon>
+					<InputGroup.Input
+						id="blog-search"
 						type="search"
 						name="q"
 						placeholder="Search posts"
 						autocomplete="off"
-						maxlength="100"
+						maxlength={100}
 						bind:value={query}
 						oninput={onSearchInput}
-						class="min-h-11 min-w-0 flex-1 border-0 bg-transparent text-[15px] text-ink placeholder:text-ink-muted focus-visible:outline-none"
+						class="h-11 min-w-0 px-0 py-0 text-[15px] text-ink placeholder:text-ink-muted md:text-[15px]"
 					/>
-				</label>
+				</InputGroup.Root>
 			</form>
 		</div>
 
@@ -283,11 +290,11 @@
 
 		{#if data.hasMore && (!needle || data.filters.q)}
 			<div class="flex justify-center pt-4">
-				<a
+				<Button
 					href="{olderHref}#post-{firstNew}"
 					onclick={loadOlder}
-					class="inline-flex min-h-12 items-center justify-center rounded-sm border border-line-strong px-[22px] text-[15px] leading-5 font-medium text-ink no-underline transition-colors duration-150 hover:border-ink"
-					>Load older posts</a
+					variant="outline-ink"
+					size="site-lg">Load older posts</Button
 				>
 			</div>
 		{/if}

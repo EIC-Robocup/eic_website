@@ -1,5 +1,6 @@
 <!-- Section opener: numbered circle, grey mono label and a short rule. -->
 <script lang="ts">
+	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { cn } from '#lib/utils.js';
 	import SecNo from './SecNo.svelte';
 
@@ -15,5 +16,5 @@
 <div class={cn('flex items-center gap-3', className)}>
 	{#if no !== undefined && no !== ''}<SecNo {no} />{/if}
 	<span class="text-label text-ink-muted">{label}</span>
-	<span aria-hidden="true" class="h-px w-16 shrink-0 bg-line-strong"></span>
+	<Separator decorative class="bg-line-strong data-horizontal:w-16" />
 </div>

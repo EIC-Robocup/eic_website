@@ -19,6 +19,7 @@ import {
 import { logActivity } from '#lib/server/activity.ts';
 import { requireEditor } from '#lib/server/auth.ts';
 import { getPageSections } from '#lib/server/content.ts';
+import { getSiteCounts } from '#lib/server/queries/site.ts';
 import { db } from '#lib/server/db/index.ts';
 import { editors, siteSections } from '#lib/server/db/schema.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -37,7 +38,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	requireEditor(locals);
 	const page = pageKeyOr404(params.page);
 
-	const [resolved, rows] = await Promise.all([
+	const [resolved, rows, siteCounts] = await Promise.all([
 		getPageSections(page),
 		db
 			.select({
@@ -48,7 +49,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			})
 			.from(siteSections)
 			.leftJoin(editors, eq(editors.email, siteSections.updatedBy))
-			.where(eq(siteSections.page, page))
+			.where(eq(siteSections.page, page)),
+		// For the live preview of the home page numbers. null: the preview says it can't read them.
+		page === 'home'
+			? getSiteCounts().catch((err: unknown) => {
+					console.error('Pages editor: could not load the site numbers', err);
+					return null;
+				})
+			: null
 	]);
 
 	const defs = sectionDefs(page);
@@ -76,6 +84,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			title: pages[key].title,
 			sections: Object.keys(pages[key].sections).length
 		})),
+		siteCounts,
 		now: new Date()
 	};
 };

@@ -12,6 +12,7 @@
 		isoDate,
 		readingTime
 	} from '#lib/components/site/format.ts';
+	import { postMorphKey } from '#lib/motion/view-transitions.ts';
 	import RssLink from '../RssLink.svelte';
 	import ReadingProgress from './ReadingProgress.svelte';
 	import ShareButtons from './ShareButtons.svelte';
@@ -25,6 +26,8 @@
 	const url = $derived(page.url.origin + page.url.pathname);
 	const showToc = $derived(data.headings.length >= 3);
 	const minutes = $derived(readingTime(data.readingMinutes));
+	/** The cover morphs from the post's card (see PostCard). */
+	const morph = $derived(postMorphKey(post.slug));
 
 	let article = $state<HTMLElement>();
 
@@ -112,8 +115,12 @@
 
 	{#if post.coverUrl}
 		<div class="site-container pt-8 pb-10 sm:pt-12 sm:pb-14">
-			<figure class="m-0 flex flex-col overflow-hidden rounded-lg border border-line">
+			<figure
+				class="m-0 flex flex-col overflow-hidden rounded-lg border border-line"
+				data-vt-key={morph}
+			>
 				<ImageSlot
+					class="vt-target"
 					src={post.coverUrl}
 					alt={post.coverAlt}
 					label="Cover photo"

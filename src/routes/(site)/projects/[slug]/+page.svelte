@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ButtonLink from '#lib/components/site/ButtonLink.svelte';
+	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
+	import * as Table from '#lib/components/ui/table/index.js';
 	import Figure from '#lib/components/site/Figure.svelte';
 	import HeroBand from '#lib/components/site/HeroBand.svelte';
 	import ImageSlot from '#lib/components/site/ImageSlot.svelte';
@@ -13,12 +15,15 @@
 	import TitleBlock from '#lib/components/site/TitleBlock.svelte';
 	import { pad2 } from '#lib/components/site/format.ts';
 	import { splitPlacement } from '#lib/content/labels.ts';
+	import { projectMorphKey } from '#lib/motion/view-transitions.ts';
 	import { capitalise, spell } from '../project-meta.ts';
 	import type { PageProps } from './$types';
 
 	const { data }: PageProps = $props();
 
 	const p = $derived(data.project);
+	/** The hero photo morphs from the project's card (see ProjectCard). */
+	const morph = $derived(projectMorphKey(p.slug));
 	const slotKind = $derived(p.category === 'software' ? 'Screenshot' : 'Photo');
 
 	const highlight = $derived.by(() => {
@@ -47,6 +52,10 @@
 			related: next(showRelated, false)
 		};
 	});
+
+	/** Parts list cells: the table's own spacing (no shadcn padding, wrapping allowed). */
+	const partHead = 'h-auto px-0 pr-4 pb-3.5 align-baseline font-normal whitespace-normal text-ink-muted';
+	const partCell = 'p-0 py-3.5 pr-4 align-baseline whitespace-normal';
 
 	const systemsTitle = $derived.by(() => {
 		const n = p.systems.length;
@@ -99,19 +108,19 @@
 
 <HeroBand circle={{ cx: 260, cy: 300, r: 260 }} height={900} labelledby="project-title">
 	<div class="site-container flex flex-col gap-5 pt-8 sm:pt-10">
-		<nav aria-label="Breadcrumb">
-			<ol class="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-sm text-ink-muted">
-				<li class="flex items-center gap-2">
-					<a
+		<Breadcrumb.Root aria-label="Breadcrumb">
+			<Breadcrumb.List class="m-0 list-none gap-2 p-0 text-ink-muted sm:gap-2">
+				<Breadcrumb.Item class="gap-2">
+					<Breadcrumb.Link
 						href="/projects"
-						class="inline-flex min-h-11 items-center text-ink-muted underline underline-offset-4 transition-colors duration-150 hover:text-ink sm:min-h-0"
-						>Projects</a
+						class="inline-flex min-h-11 items-center text-ink-muted underline underline-offset-4 duration-150 hover:text-ink sm:min-h-0"
+						>Projects</Breadcrumb.Link
 					>
-					<span aria-hidden="true">/</span>
-				</li>
-				<li><span aria-current="page" class="text-ink">{p.title}</span></li>
-			</ol>
-		</nav>
+				</Breadcrumb.Item>
+				<Breadcrumb.Separator>/</Breadcrumb.Separator>
+				<Breadcrumb.Item><Breadcrumb.Page class="text-ink">{p.title}</Breadcrumb.Page></Breadcrumb.Item>
+			</Breadcrumb.List>
+		</Breadcrumb.Root>
 		<div class="flex flex-wrap items-end justify-between gap-6">
 			<div class="flex min-w-0 flex-col gap-4">
 				<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -147,6 +156,8 @@
 			caption={p.coverCaption}
 			iconSize={36}
 			eager
+			{morph}
+			sizes="(min-width: 1264px) 888px, (min-width: 996px) 70vw, 100vw"
 			class="flex-[999_1_620px]"
 		/>
 		<aside aria-label="Project facts" class="flex min-w-0 flex-[1_1_280px] flex-col gap-5">
@@ -261,40 +272,44 @@
 						alt={p.partsPhoto.alt || p.partsPhoto.caption}
 						label="Photo · {p.partsPhoto.caption || p.partsPhoto.alt}"
 						rounded
+						sizes="(min-width: 640px) 400px, 100vw"
 					/>
 				{/if}
 			</div>
 			<div class="min-w-0 flex-[999_1_560px]">
 				{#if p.parts.length}
-					<table class="w-full table-fixed border-collapse font-mono text-sm leading-5">
-						<caption class="sr-only">Parts of {p.title}</caption>
+					<!-- The shadcn Table, set as the drawing's parts list: mono, hairlines between rows. -->
+					<Table.Root class="table-fixed border-collapse font-mono text-sm leading-5">
+						<Table.Caption class="sr-only">Parts of {p.title}</Table.Caption>
 						<colgroup>
 							<col class="w-12 sm:w-[72px]" />
 							<col class="w-12 sm:w-16" />
 							<col class="w-[45%]" />
 							<col />
 						</colgroup>
-						<thead>
-							<tr class="text-left text-xs tracking-[0.08em] text-ink-muted">
-								<th scope="col" class="pr-4 pb-3.5 font-normal">ITEM</th>
-								<th scope="col" class="pr-4 pb-3.5 font-normal">QTY</th>
-								<th scope="col" class="pr-4 pb-3.5 font-normal">PART</th>
-								<th scope="col" class="pb-3.5 font-normal">NOTE</th>
-							</tr>
-						</thead>
-						<tbody>
+						<Table.Header class="[&_tr]:border-b-0">
+							<Table.Row class="border-b-0 text-left text-xs tracking-[0.08em] text-ink-muted hover:bg-transparent">
+								<Table.Head scope="col" class={partHead}>ITEM</Table.Head>
+								<Table.Head scope="col" class={partHead}>QTY</Table.Head>
+								<Table.Head scope="col" class={partHead}>PART</Table.Head>
+								<Table.Head scope="col" class={[partHead, 'pr-0']}>NOTE</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body class="[&_tr:last-child]:border-t">
 							{#each p.parts as part, i (i)}
-								<tr class="border-t border-line align-baseline">
-									<td class="py-3.5 pr-4 text-brand-text">{pad2(i + 1)}</td>
-									<td class="py-3.5 pr-4">{part.qty}</td>
-									<th scope="row" class="py-3.5 pr-4 text-left font-normal break-words text-ink"
-										>{part.part}</th
+								<Table.Row class="border-t border-b-0 border-line align-baseline hover:bg-transparent">
+									<Table.Cell class={[partCell, 'text-brand-text']}>{pad2(i + 1)}</Table.Cell>
+									<Table.Cell class={partCell}>{part.qty}</Table.Cell>
+									<Table.Head
+										scope="row"
+										class={[partCell, 'h-auto text-left font-normal break-words text-ink']}
+										>{part.part}</Table.Head
 									>
-									<td class="py-3.5 break-words text-ink-muted">{part.note}</td>
-								</tr>
+									<Table.Cell class={[partCell, 'pr-0 break-words text-ink-muted']}>{part.note}</Table.Cell>
+								</Table.Row>
 							{/each}
-						</tbody>
-					</table>
+						</Table.Body>
+					</Table.Root>
 				{/if}
 				{#if p.software.length}
 					<ul
@@ -336,6 +351,7 @@
 							fig={i + 2}
 							caption={photo.caption}
 							iconSize={28}
+							sizes="(min-width: 1264px) 288px, (min-width: 1100px) 25vw, (min-width: 640px) 45vw, 50vw"
 						/>
 					</li>
 				{/each}

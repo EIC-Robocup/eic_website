@@ -27,6 +27,7 @@
 	import StatusBadge from './StatusBadge.svelte';
 	import Tag from './Tag.svelte';
 	import { isExternal, projectMeta } from './format.ts';
+	import { projectMorphKey } from '#lib/motion/view-transitions.ts';
 
 	type Props = {
 		project: ProjectCardData;
@@ -47,6 +48,10 @@
 	const slotLabel = $derived(
 		`${project.category === 'software' ? 'Screenshot' : 'Photo'} · ${project.title}`
 	);
+	/** The cover morphs into the project page's hero photo (only for cards that open it). */
+	const morph = $derived(project.linkUrl ? null : projectMorphKey(project.slug));
+	/** Grid cards: three across the 1200px column, two on tablets, one on phones. */
+	const sizes = '(min-width: 1264px) 384px, (min-width: 1072px) 33vw, (min-width: 640px) 50vw, 100vw';
 </script>
 
 <a
@@ -54,6 +59,7 @@
 	rel={external ? 'noopener noreferrer' : undefined}
 	aria-labelledby="{uid}-title"
 	aria-describedby={meta ? `${uid}-meta` : undefined}
+	data-vt-key={morph}
 	class={cn(
 		'group flex flex-col overflow-hidden rounded-lg border border-line bg-surface-200 text-ink no-underline transition-colors duration-150 hover:border-ink',
 		className
@@ -65,6 +71,8 @@
 		label={slotLabel}
 		aspect="4 / 3"
 		{eager}
+		{sizes}
+		class={morph ? 'vt-target' : undefined}
 	/>
 	{#if variant === 'compact'}
 		<div class="flex flex-col gap-1.5 border-t border-line px-6 py-5">

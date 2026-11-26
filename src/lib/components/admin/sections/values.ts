@@ -2,7 +2,14 @@
  * Helpers for the generic section editor (the admin Pages editor). Client safe: the same
  * validation runs in the browser before publishing and in the `publish` action.
  */
-import { safeHref, type Field, type ScalarField, type SectionDef } from '#lib/content/sections.ts';
+import {
+	emptyValue,
+	isFieldShown,
+	safeHref,
+	type Field,
+	type ScalarField,
+	type SectionDef
+} from '#lib/content/sections.ts';
 
 /** One section as the editor holds it, and as it is submitted (JSON in a hidden field). */
 export type SectionDraft = { enabled: boolean; data: Record<string, unknown> };
@@ -48,9 +55,9 @@ export function isWideField(field: Field): boolean {
 	return ['headline', 'heading', 'subline'].includes(field.key);
 }
 
-/** A new, empty row for a list field. */
+/** A new, empty row for a list field (selects start on their first option). */
 export function emptyItem(field: ListField): Record<string, unknown> {
-	return Object.fromEntries(field.fields.map((sub) => [sub.key, sub.type === 'toggle' ? false : '']));
+	return Object.fromEntries(field.fields.map((sub) => [sub.key, emptyValue(sub)]));
 }
 
 export const LINK_ERROR = 'Use a link that starts with https://, a / for a page on this site, or # for a section.';
@@ -76,6 +83,9 @@ function checkScalar(field: ScalarField, value: unknown, path: string, errors: R
 		case 'url':
 			if (text.length > LIMITS.url) errors[path] = tooLong(LIMITS.url);
 			else if (text.trim() && !safeHref(text)) errors[path] = LINK_ERROR;
+			break;
+		case 'select':
+			if (!field.options.some((option) => option.value === value)) errors[path] = 'Pick one of the options.';
 			break;
 		case 'toggle':
 			break;
@@ -125,7 +135,11 @@ export function validateSection(def: SectionDef, input: unknown): Record<string,
 				if (items.length > max) errors[path] = `Up to ${max} ${field.itemLabel}s.`;
 				items.forEach((item, index) => {
 					const row = isRecord(item) ? item : {};
-					for (const sub of field.fields) checkScalar(sub, row[sub.key], `${path}.${index}.${sub.key}`, errors);
+					for (const sub of field.fields) {
+						// The editor can't see (or fix) a hidden control.
+						if (!isFieldShown(sub, row)) continue;
+						checkScalar(sub, row[sub.key], `${path}.${index}.${sub.key}`, errors);
+					}
 				});
 				break;
 			}

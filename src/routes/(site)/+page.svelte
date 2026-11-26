@@ -20,7 +20,8 @@
 	const { data }: PageProps = $props();
 
 	const hero = $derived(data.sections.hero.data);
-	const stats = $derived(data.sections.stats.data.items.filter((s) => s.value.trim()));
+	// Resolved in the load: typed values and numbers counted from the database.
+	const stats = $derived(data.stats);
 	const featuredCopy = $derived(data.sections.featured.data);
 	const stories = $derived(data.sections.stories.data);
 	const peopleCopy = $derived(data.sections.people.data);
@@ -151,7 +152,15 @@
 								i === 0 ? 'text-brand-text' : 'text-ink'
 							]}>{stat.value}</span
 						>
-						{#if stat.label}<span class="text-label text-ink-muted">{stat.label}</span>{/if}
+						{#if stat.label}
+							<!-- Each "·" part stays together when it fits, so narrow cells wrap at the dots. -->
+							{@const parts = stat.label.split(' · ')}
+							<span class="text-label text-ink-muted"
+								>{#each parts as part, j (j)}{#if j > 0}{' '}{/if}<span class="inline-block max-w-full"
+										>{part}{#if j < parts.length - 1}&nbsp;·{/if}</span
+									>{/each}</span
+							>
+						{/if}
 					</li>
 				{/each}
 			</ul>

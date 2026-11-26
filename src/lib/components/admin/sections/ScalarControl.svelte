@@ -1,6 +1,6 @@
 <!--
-	The input for one scalar section field (text, textarea, url). Toggles are rendered by the
-	caller (ToggleRow or a Switch). No `name`: the Pages editor submits each section as JSON.
+	The input for one scalar section field (text, textarea, url, select). Toggles are rendered by
+	the caller (ToggleRow or a Switch). No `name`: the Pages editor submits each section as JSON.
 
 	<ScalarControl field={field} bind:value={data.headline} attrs={attrs} />
 -->
@@ -13,8 +13,9 @@
 <script lang="ts">
 	import type { ScalarField } from '#lib/content/sections.ts';
 	import { Input } from '#lib/components/ui/input/index.js';
+	import * as Select from '#lib/components/ui/select/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
-	import { inputClass, monoInputClass, textareaClass } from '../styles.ts';
+	import { inputClass, monoInputClass, selectTriggerClass, textareaClass } from '../styles.ts';
 	import { LIMITS } from './values.ts';
 
 	type Props = {
@@ -34,9 +35,23 @@
 	const text = () => (typeof value === 'string' ? value : '');
 	const write = (next: string) => (value = next);
 	const placeholder = $derived('placeholder' in field ? field.placeholder : undefined);
+	const selected = $derived(
+		field.type === 'select' ? (field.options.find((o) => o.value === value) ?? field.options[0]) : undefined
+	);
 </script>
 
-{#if field.type === 'textarea'}
+{#if field.type === 'select'}
+	<Select.Root type="single" bind:value={() => selected?.value ?? '', write}>
+		<Select.Trigger {...attrs} aria-label={ariaLabel} class={selectTriggerClass}>
+			{selected?.label ?? 'Choose'}
+		</Select.Trigger>
+		<Select.Content class="border border-line bg-surface-200">
+			{#each field.options as option (option.value)}
+				<Select.Item value={option.value} label={option.label} class="min-h-10" />
+			{/each}
+		</Select.Content>
+	</Select.Root>
+{:else if field.type === 'textarea'}
 	<Textarea
 		{...attrs}
 		bind:value={text, write}

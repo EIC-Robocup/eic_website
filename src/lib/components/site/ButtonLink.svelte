@@ -1,5 +1,6 @@
 <!--
-	A link styled as a button.
+	A link styled as a button: the shadcn Button (which renders an <a> when given `href`)
+	with the EIC site variants and sizes.
 	primary: EIC red. outline: line-strong border. light: ink fill with dark text.
 	on-brand: dark fill on a red band. on-brand-outline: white border on a red band.
 	Off-site http(s) links open in a new tab with rel="noopener noreferrer".
@@ -11,10 +12,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAnchorAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils.js';
+	import {
+		Button,
+		type ButtonProps,
+		type ButtonVariant as UiVariant
+	} from '#lib/components/ui/button/index.js';
 	import { isExternal } from './format.ts';
 
-	type Props = Omit<HTMLAnchorAttributes, 'href' | 'class' | 'children'> & {
+	type Props = Omit<HTMLAnchorAttributes, 'href' | 'class' | 'children' | 'type'> & {
 		href: string;
 		variant?: ButtonVariant;
 		/** 'md' is 48px tall (page buttons), 'sm' is 44px (nav, share buttons). */
@@ -38,28 +43,24 @@
 	const external = $derived(isExternal(href));
 	const blank = $derived(newTab ?? external);
 
-	const variants: Record<ButtonVariant, string> = {
-		primary: 'bg-brand text-on-brand hover:bg-brand-hover',
-		outline: 'border border-line-strong text-ink hover:border-ink',
-		light: 'bg-ink text-ink-on-light hover:bg-ink/85',
-		'on-brand': 'bg-surface-100 text-on-brand hover:bg-black',
-		'on-brand-outline':
-			'border border-on-brand text-on-brand hover:bg-on-brand hover:text-ink-on-light'
+	const VARIANTS: Record<ButtonVariant, UiVariant> = {
+		primary: 'brand',
+		outline: 'outline-ink',
+		light: 'light',
+		'on-brand': 'on-brand',
+		'on-brand-outline': 'on-brand-outline'
 	};
 </script>
 
-<a
+<Button
 	{href}
+	variant={VARIANTS[variant]}
+	size={size === 'md' ? 'site-lg' : 'site-md'}
 	target={blank ? '_blank' : undefined}
 	rel={external || blank ? 'noopener noreferrer' : undefined}
-	{...rest}
-	class={cn(
-		'inline-flex items-center justify-center gap-2 rounded-sm text-[15px] leading-5 font-medium no-underline transition-colors duration-150',
-		size === 'md' ? 'min-h-12 px-[22px]' : 'min-h-11 px-[18px]',
-		variants[variant],
-		className
-	)}
+	{...rest as ButtonProps}
+	class={className}
 >
 	{@render children()}
 	{#if blank}<span class="sr-only">(opens in a new tab)</span>{/if}
-</a>
+</Button>

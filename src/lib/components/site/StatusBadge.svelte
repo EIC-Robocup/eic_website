@@ -1,9 +1,9 @@
 <!--
 	Status as a dot plus a word: green for Ongoing / Active / Recruiting, grey for Archived.
-	Pass `status`, or a free `label` with a `tone`.
+	The shadcn Badge with the EIC status variants. Pass `status`, or a free `label` with a `tone`.
 -->
 <script lang="ts">
-	import { cn } from '#lib/utils.js';
+	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { statusInfo, type StatusTone } from './format.ts';
 
 	type Props = {
@@ -16,12 +16,11 @@
 
 	const info = $derived(statusInfo(status));
 	const text = $derived(label ?? info.label);
-	const color = $derived((tone ?? info.tone) === 'success' ? 'text-success' : 'text-ink-muted');
+	const variant = $derived((tone ?? info.tone) === 'success' ? 'status-success' : 'status-muted');
 </script>
 
 {#if text}
-	<!-- text-label is kept out of cn(): it would treat it as a text colour and drop it. -->
-	<span class={['text-label', cn('inline-flex items-center gap-1.5 whitespace-nowrap', color, className)]}>
+	<Badge {variant} class={className}>
 		<span aria-hidden="true" class="size-2 shrink-0 rounded-full bg-current"></span>{text}
-	</span>
+	</Badge>
 {/if}

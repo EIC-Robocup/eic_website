@@ -27,6 +27,16 @@
 		noteClass?: string;
 		class?: string;
 		imageClass?: string;
+		/**
+		 * How wide the image is shown, for the browser to pick from the optimised srcset.
+		 * The default fits the hero figures (half the 1200px column next to the text).
+		 */
+		sizes?: string;
+		/**
+		 * Page transitions: the photo morphs from and to the element with the same key on the
+		 * previous or next page, e.g. "project-walkie-4" (see #lib/motion/view-transitions.ts).
+		 */
+		morph?: string | null;
 	};
 
 	let {
@@ -42,12 +52,24 @@
 		note,
 		noteClass,
 		class: className,
-		imageClass
+		imageClass,
+		sizes = '(min-width: 1264px) 600px, (min-width: 980px) 50vw, 100vw',
+		morph
 	}: Props = $props();
 </script>
 
-<figure class={cn('relative m-0 flex min-w-0 flex-col gap-2.5', className)}>
-	<ImageSlot {src} {alt} {label} {aspect} {eager} {rounded} {iconSize} class={imageClass} />
+<figure class={cn('relative m-0 flex min-w-0 flex-col gap-2.5', className)} data-vt-key={morph || undefined}>
+	<ImageSlot
+		{src}
+		{alt}
+		{label}
+		{aspect}
+		{eager}
+		{rounded}
+		{iconSize}
+		{sizes}
+		class={cn(morph && 'vt-target', imageClass)}
+	/>
 	{#if caption}
 		<figcaption class="flex items-baseline gap-2.5">
 			<span class="text-label shrink-0 text-brand-text">Fig. {pad2(fig)}</span>

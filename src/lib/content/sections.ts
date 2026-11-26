@@ -10,11 +10,24 @@
  * (see `fill`).
  */
 
-export type ScalarField = { key: string; label: string; hint?: string } & (
+export type SelectOption = { value: string; label: string };
+
+export type ScalarField = {
+	key: string;
+	label: string;
+	hint?: string;
+	/**
+	 * List sub-fields only: show the control only while a sibling field has one of these
+	 * values, e.g. `{ key: 'source', equals: ['text'] }`. The value is kept either way.
+	 */
+	showWhen?: { key: string; equals: readonly string[] };
+} & (
 	| { type: 'text'; placeholder?: string }
 	| { type: 'textarea'; rows?: number }
 	| { type: 'url'; placeholder?: string }
 	| { type: 'toggle' }
+	/** One of `options`. Anything else falls back to the default, then the first option. */
+	| { type: 'select'; options: readonly SelectOption[] }
 );
 
 export type Field =
@@ -34,6 +47,8 @@ export type Field =
 			itemLabel: string;
 			fields: ScalarField[];
 			max?: number;
+			/** A live "what the page shows" line under each row in the Pages editor. */
+			preview?: 'stat';
 	  };
 
 export type LinkValue = { label: string; href: string };
@@ -72,6 +87,21 @@ const heroFields = (extra: Field[] = []): Field[] => [
 	{ key: 'note', label: 'Handwritten note', type: 'text', hint: 'One short line in the Caveat hand. Leave empty to hide.' }
 ];
 
+/**
+ * Where a number in the home page strip comes from. Everything but `text` is counted
+ * from the database when the page loads (see resolveStats in #lib/content/stats.ts).
+ */
+export const STAT_SOURCES = [
+	{ value: 'text', label: 'Text' },
+	{ value: 'latestResult', label: 'Latest result' },
+	{ value: 'teams', label: 'Teams' },
+	{ value: 'people', label: 'People' },
+	{ value: 'advisors', label: 'Advisors' },
+	{ value: 'projects', label: 'Projects' }
+] as const satisfies readonly SelectOption[];
+
+export type StatSource = (typeof STAT_SOURCES)[number]['value'];
+
 export const pages = {
 	home: {
 		title: 'Home',
@@ -99,7 +129,8 @@ export const pages = {
 			}),
 			stats: section({
 				title: 'Numbers',
-				description: 'The strip of big numbers under the hero. The first one is the red highlight.',
+				description:
+					'The strip of big numbers under the hero. The first one is the red highlight. Numbers counted from the database update by themselves.',
 				fields: [
 					{
 						key: 'items',
@@ -107,18 +138,29 @@ export const pages = {
 						type: 'list',
 						itemLabel: 'number',
 						max: 4,
+						preview: 'stat',
+						hint: 'Text shows the value you type. The other sources count from the database; Latest result is the newest entry in Achievements. Leave Label empty for an automatic one. Labels can use {count} (this number), {people}, {teams}, {advisors} and {projects}.',
 						fields: [
-							{ key: 'value', label: 'Value', type: 'text', placeholder: '6th' },
-							{ key: 'label', label: 'Label', type: 'text', placeholder: 'of 24 · RoboCup@Home 2026' }
+							{ key: 'source', label: 'Source', type: 'select', options: STAT_SOURCES },
+							{
+								key: 'value',
+								label: 'Value',
+								type: 'text',
+								placeholder: '4th',
+								hint: 'Used only for Text.',
+								showWhen: { key: 'source', equals: ['text'] }
+							},
+							{ key: 'label', label: 'Label', type: 'text', placeholder: 'Optional' }
 						]
 					}
 				],
 				defaults: {
+					// On counted items `value` is only a fallback for when the database can't be read.
 					items: [
-						{ value: '6th', label: 'of 24 · RoboCup@Home 2026' },
-						{ value: '7 DOF', label: 'per arm · two arms' },
-						{ value: 'Ø152', label: 'omni wheels · ×4' },
-						{ value: '41', label: 'people · five teams' }
+						{ source: 'latestResult', value: '6th', label: '' },
+						{ source: 'text', value: '4th', label: 'Walkie generation' },
+						{ source: 'teams', value: '5', label: 'teams' },
+						{ source: 'people', value: '41', label: 'people · {advisors} advisors' }
 					]
 				}
 			}),
@@ -139,7 +181,8 @@ export const pages = {
 			}),
 			olderRobots: section({
 				title: 'Older robots',
-				description: 'Three smaller cards for the next projects in the Projects order.',
+				description:
+					'Up to three smaller cards: published projects that are not featured and not ongoing, in the Projects order.',
 				toggleable: true,
 				fields: [],
 				defaults: {}
@@ -464,8 +507,28 @@ export function safeHref(v: string): string {
 	return '';
 }
 
+/** The value of a new or missing list sub-field: off, the first option, or empty text. */
+export function emptyValue(field: ScalarField): string | boolean {
+	if (field.type === 'toggle') return false;
+	if (field.type === 'select') return field.options[0]?.value ?? '';
+	return '';
+}
+
+/** Whether a list sub-field's control is shown for this row (see `showWhen`). */
+export function isFieldShown(field: ScalarField, row: Record<string, unknown>): boolean {
+	if (!field.showWhen) return true;
+	const other = row[field.showWhen.key];
+	return typeof other === 'string' && field.showWhen.equals.includes(other);
+}
+
 function coerceScalar(field: ScalarField, value: unknown, fallback: unknown): unknown {
 	switch (field.type) {
+		case 'select': {
+			const allowed = (v: unknown): v is string =>
+				typeof v === 'string' && field.options.some((o) => o.value === v);
+			if (allowed(value)) return value;
+			return allowed(fallback) ? fallback : emptyValue(field);
+		}
 		case 'toggle':
 			return typeof value === 'boolean' ? value : Boolean(fallback);
 		case 'url':
@@ -509,8 +572,7 @@ function coerceField(field: Field, value: unknown, fallback: unknown): unknown {
 			return items.map((item) => {
 				const out: Record<string, unknown> = {};
 				for (const sub of field.fields) {
-					const empty = sub.type === 'toggle' ? false : '';
-					out[sub.key] = coerceScalar(sub, item[sub.key], empty);
+					out[sub.key] = coerceScalar(sub, item[sub.key], emptyValue(sub));
 				}
 				return out;
 			});

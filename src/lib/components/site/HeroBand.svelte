@@ -47,8 +47,10 @@
 	class={cn('relative overflow-hidden bg-graph-paper', className)}
 >
 	{#if circle}
+		<!-- Fades in slowly as the page arrives (data-reveal="slow", see #lib/motion/reveal.ts). -->
 		<svg
 			aria-hidden="true"
+			data-reveal="slow"
 			viewBox="0 0 1440 {height}"
 			preserveAspectRatio="xMidYMid slice"
 			class="pointer-events-none absolute inset-0 size-full"

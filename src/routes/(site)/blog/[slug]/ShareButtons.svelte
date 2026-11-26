@@ -1,9 +1,12 @@
 <!--
-	Share row: Facebook (a plain link, so it works without JavaScript), copy link with an
-	inline "Copied" state, and the system share sheet where the browser has one.
+	Share row: Facebook (a plain link, so it works without JavaScript), copy link (a toast
+	says whether it worked) and the system share sheet where the browser has one.
+	The buttons are the shadcn Button with the EIC outline variant at 44px.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import { Button } from '#lib/components/ui/button/index.js';
 
 	type Props = { url: string; title: string; text?: string | null };
 	let { url, title, text }: Props = $props();
@@ -13,13 +16,9 @@
 	);
 
 	let canShare = $state(false);
-	let copied = $state(false);
-	let copyFailed = $state(false);
-	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	onMount(() => {
 		canShare = typeof navigator.share === 'function';
-		return () => clearTimeout(timer);
 	});
 
 	function copyWithSelection(value: string): boolean {
@@ -48,13 +47,8 @@
 		} catch {
 			ok = copyWithSelection(url);
 		}
-		copied = ok;
-		copyFailed = !ok;
-		clearTimeout(timer);
-		timer = setTimeout(() => {
-			copied = false;
-			copyFailed = false;
-		}, 2500);
+		if (ok) toast.success('Link copied', { id: 'share-copy' });
+		else toast.error('Could not copy the link', { id: 'share-copy', description: url });
 	}
 
 	async function share() {
@@ -65,24 +59,24 @@
 		}
 	}
 
-	const button =
-		'inline-flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-line-strong bg-transparent px-3.5 text-sm leading-5 text-ink no-underline transition-colors duration-150 hover:border-ink';
+	// The share row's buttons are a little smaller than page buttons: 14px regular text.
+	const button = 'px-3.5 text-sm leading-5 font-normal';
 </script>
 
 <div class="flex flex-wrap items-center gap-2">
 	<span class="pr-1 text-sm text-ink-muted">Share</span>
-	<a href={facebook} target="_blank" rel="noopener noreferrer" class={button}
-		>Facebook<span class="sr-only"> (opens in a new tab)</span></a
+	<Button
+		href={facebook}
+		target="_blank"
+		rel="noopener noreferrer"
+		variant="outline-ink"
+		size="site-md"
+		class={button}>Facebook<span class="sr-only"> (opens in a new tab)</span></Button
 	>
-	<button type="button" onclick={copy} class={[button, 'min-w-[96px]']}>
-		{copied ? 'Copied' : copyFailed ? 'Copy failed' : 'Copy link'}
-	</button>
+	<Button onclick={copy} variant="outline-ink" size="site-md" class={button}>Copy link</Button>
 	{#if canShare}
-		<button type="button" onclick={share} class={button}>
+		<Button onclick={share} variant="outline-ink" size="site-md" class={button}>
 			More<span class="sr-only"> ways to share</span>
-		</button>
+		</Button>
 	{/if}
-	<span class="sr-only" aria-live="polite"
-		>{copied ? 'Link copied' : copyFailed ? 'Could not copy the link' : ''}</span
-	>
 </div>

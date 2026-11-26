@@ -16,6 +16,7 @@
 	import PageHeader from '#lib/components/admin/PageHeader.svelte';
 	import { AdminForm } from '#lib/components/admin/form.svelte.ts';
 	import SectionPanel from '#lib/components/admin/sections/SectionPanel.svelte';
+	import { previewStat, setRowPreviewers } from '#lib/components/admin/sections/preview.ts';
 	import { formatDateTime, isoString, timeAgo } from '#lib/components/admin/sections/time.ts';
 	import {
 		sectionErrors,
@@ -26,6 +27,11 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// "Shows 41 people · 3 advisors" under each number, from the counts in the load.
+	setRowPreviewers({
+		stat: (item, index, items) => previewStat(data.siteCounts, item, index, items)
+	});
 
 	type Drafts = Record<string, SectionDraft>;
 

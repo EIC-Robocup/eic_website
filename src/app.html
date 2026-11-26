@@ -7,6 +7,24 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#111111" />
 		<meta name="color-scheme" content="dark" />
+		<script>
+			// Motion on arrival (see src/lib/motion/reveal.ts): content may only be hidden for its
+			// entrance once this runs: never under reduced motion, on a data saver or a slow
+			// connection, or without JavaScript. If the app has not taken over within 2.5s, show
+			// everything (later pages still animate).
+			(function () {
+				var root = document.documentElement;
+				var net = navigator.connection;
+				if (!window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+				if (net && (net.saveData || /(^|-)2g|3g/.test(net.effectiveType || ''))) return;
+				root.classList.add('motion');
+				setTimeout(function () {
+					if (root.classList.contains('motion-ready')) return;
+					root.classList.remove('motion');
+					root.setAttribute('data-motion-late', '');
+				}, 2500);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

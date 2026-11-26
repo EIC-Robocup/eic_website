@@ -7,11 +7,18 @@
 			variant: {
 				default: "bg-transparent",
 				outline: "border-input hover:bg-muted border bg-transparent shadow-xs",
+				/**
+				 * EIC site filter pill: line-strong border on surface-200, ink fill with dark text when
+				 * on, 150ms colour transitions and the site's own focus ring. Pair with size "pill".
+				 */
+				pill: "cursor-pointer border border-line-strong bg-surface-200 text-ink transition-colors duration-150 hover:border-ink hover:bg-surface-200 hover:text-ink aria-pressed:bg-surface-200 data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:text-ink-on-light data-[state=on]:hover:bg-ink data-[state=on]:hover:text-ink-on-light focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-focus",
 			},
 			size: {
 				default: "h-9 min-w-9 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
 				sm: "h-8 min-w-8 px-2.5 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5",
 				lg: "h-10 min-w-10 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+				/** EIC site filter pill: 44px tall, 15/20 medium text, 6px corners. */
+				pill: "h-auto min-h-11 gap-1.5 rounded-sm px-4 text-[15px] leading-5",
 			},
 		},
 		defaultVariants: {

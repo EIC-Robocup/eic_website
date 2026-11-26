@@ -17,6 +17,7 @@
 
 <script lang="ts">
 	import { cn } from '#lib/utils.js';
+	import { optimizedSrc } from '#lib/image.ts';
 	import { initials, isExternal } from './format.ts';
 
 	type Props = {
@@ -35,6 +36,11 @@
 		person.role?.trim() || (person.teamName ? `${person.teamName} team` : '')
 	);
 	const md = $derived(size === 'md');
+	/**
+	 * The photo is shown at 92px (76px in the home strip): the smallest optimised width (320px)
+	 * covers it at 3x, so one candidate is enough (#lib/image.ts; other links pass through).
+	 */
+	const photo = $derived(optimizedSrc(person.photoUrl, 320));
 </script>
 
 {#snippet body()}
@@ -45,10 +51,12 @@
 			link && 'group-hover:border-ink'
 		)}
 	>
-		{#if person.photoUrl}
+		{#if photo}
 			<img
-				src={person.photoUrl}
+				src={photo}
 				alt=""
+				width={md ? 92 : 76}
+				height={md ? 92 : 76}
 				loading="lazy"
 				decoding="async"
 				class={cn('rounded-full object-cover', md ? 'size-[92px]' : 'size-[76px]')}

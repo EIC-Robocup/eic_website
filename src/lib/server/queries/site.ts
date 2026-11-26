@@ -6,7 +6,7 @@
  * Errors (for example an unreachable database) are not caught here: wrap a call
  * in try/catch in the load if the page should still render without it.
  */
-import { and, asc, desc, eq, inArray, isNotNull, lte, ne, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, lte, ne, notInArray, sql, type SQL } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import {
 	achievements,
@@ -29,6 +29,7 @@ import {
 } from '#lib/server/db/schema.ts';
 import { extractHeadings, readingMinutes, renderMarkdown } from '#lib/server/markdown.ts';
 import { displayRole, initials } from '#lib/content/labels.ts';
+import type { SiteCounts } from '#lib/content/stats.ts';
 
 /**
  * Team slugs that are groups on the People page but not counted as teams.
@@ -323,6 +324,49 @@ export async function countVisiblePeople(): Promise<number> {
 		.from(people)
 		.where(and(eq(people.visible, true), inArray(people.kind, ['member', 'advisor'])));
 	return row?.n ?? 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Site numbers                                                               */
+/* ------------------------------------------------------------------------- */
+
+export type { SiteCounts };
+
+/**
+ * The numbers the home page strip can show (see resolveStats in #lib/content/stats.ts),
+ * counted the same way as the People and Projects pages. Two queries, run together.
+ */
+export async function getSiteCounts(): Promise<SiteCounts> {
+	const countedTeam = NON_TEAM_SLUGS.length ? notInArray(teams.slug, [...NON_TEAM_SLUGS]) : sql`true`;
+	const [[counts], [latest]] = await Promise.all([
+		db
+			.select({
+				people: sql<number>`count(*) filter (where ${people.kind} in ('member', 'advisor'))::int`,
+				advisors: sql<number>`count(*) filter (where ${people.kind} = 'advisor')::int`,
+				teams: sql<number>`count(distinct ${people.teamId}) filter (where ${people.kind} = 'member' and ${countedTeam})::int`,
+				projects: sql<number>`(select count(*) from ${projects} where ${projects.published})::int`
+			})
+			.from(people)
+			.leftJoin(teams, eq(people.teamId, teams.id))
+			.where(eq(people.visible, true)),
+		db
+			.select({
+				placement: achievements.placement,
+				entrants: achievements.entrants,
+				competition: achievements.competition,
+				year: achievements.year
+			})
+			.from(achievements)
+			.orderBy(desc(achievements.year), asc(achievements.sortOrder), asc(achievements.createdAt))
+			.limit(1)
+	]);
+	return {
+		people: counts?.people ?? 0,
+		teams: counts?.teams ?? 0,
+		advisors: counts?.advisors ?? 0,
+		projects: counts?.projects ?? 0,
+		latestResult: latest ?? null
+	};
 }
 
 /* ------------------------------------------------------------------------- */

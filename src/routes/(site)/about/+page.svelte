@@ -206,6 +206,7 @@
 							alt={photo.alt}
 							label={photo.caption ? `Photo · ${photo.caption}` : 'Photo'}
 							aspect="4 / 3"
+							sizes="(min-width: 1264px) 260px, (min-width: 640px) 25vw, 50vw"
 						/>
 						<figcaption
 							class="min-h-[44px] px-1 pt-2.5 pb-3 font-hand text-xl leading-none font-semibold text-ink-on-light sm:min-h-[50px] sm:pt-3 sm:pb-3.5 sm:text-2xl"
@@ -374,19 +375,26 @@
 				{/if}
 			</figure>
 			{#if contact.personName || contact.personEmail}
-				<div class="flex flex-col gap-1">
-					<span class="text-label text-ink-muted">Contact person</span>
+				<dl class="m-0 flex flex-col gap-4">
 					{#if contact.personName}
-						<span class="text-base leading-6 font-semibold">{contact.personName}</span>
+						<div class="flex flex-col gap-1">
+							<dt class="text-label text-ink-muted">Contact person</dt>
+							<dd class="m-0 text-base leading-6 font-semibold">{contact.personName}</dd>
+						</div>
 					{/if}
 					{#if contact.personEmail}
-						<a
-							href="mailto:{contact.personEmail}"
-							class="self-start text-base leading-6 break-all text-brand-text transition-colors duration-150 hover:text-ink"
-							>{contact.personEmail}</a
-						>
+						<div class="flex flex-col gap-1">
+							<dt class="text-label text-ink-muted">Email</dt>
+							<dd class="m-0">
+								<a
+									href="mailto:{contact.personEmail}"
+									class="text-base leading-6 break-all text-brand-text transition-colors duration-150 hover:text-ink"
+									>{contact.personEmail}</a
+								>
+							</dd>
+						</div>
 					{/if}
-				</div>
+				</dl>
 			{/if}
 		</div>
 		{#if contact.formEnabled}
