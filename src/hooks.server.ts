@@ -73,6 +73,21 @@ const admin: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
+/**
+ * If Supabase falls back to the Site URL (a redirect URL that is not on its allow list),
+ * sign in links arrive at "/?token_hash=..." or "/?code=...". Send them to /auth/confirm.
+ */
+const authFallback: Handle = async ({ event, resolve }) => {
+	const { url } = event;
+	if (url.pathname === '/' && (url.searchParams.has('token_hash') || url.searchParams.has('code'))) {
+		return new Response(null, {
+			status: 303,
+			headers: { location: `/auth/confirm${url.search}`, 'cache-control': 'no-store' }
+		});
+	}
+	return resolve(event);
+};
+
 /** Baseline security headers for every response. */
 const securityHeaders: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
@@ -83,4 +98,4 @@ const securityHeaders: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handle = sequence(securityHeaders, supabase, admin);
+export const handle = sequence(securityHeaders, authFallback, supabase, admin);
