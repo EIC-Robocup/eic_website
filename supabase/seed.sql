@@ -212,7 +212,7 @@ insert into posts (
 
 Your first step is to pick a team: Navigation, AI, Mechanical Design, Integration, or Operations & Support. Then you ship real work onto a real robot.
 
-To join, tell us about you through the form on the [About page](/about#contact), or email Taratorn Assawadejmetakul, our team leader, at t.assawadej@gmail.com. The lab is in Engineering Building 1. Our robot code is open source on [GitHub](https://github.com/robocup-eic), so you can read it before your first day.$md$,
+To join, tell us about you through the form on the [About page](/about#contact), or email us at chula.intania.eic@gmail.com. The lab is in Engineering Building 1. Our robot code is open source on [GitHub](https://github.com/robocup-eic), so you can read it before your first day.$md$,
 	'club-life', 'EIC Chula', 'published', '2026-11-20 09:00:00+07',
 	null, null, null, array['Joining', 'Teams'], null, false,
 	'2026-11-20 09:00:00+07', '2026-11-20 09:00:00+07'

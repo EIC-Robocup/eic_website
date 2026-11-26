@@ -380,7 +380,7 @@ export const pages = {
 					heading: 'Come say hi',
 					address: 'Engineering Building 1 · Chulalongkorn University',
 					personName: 'Taratorn Assawadejmetakul',
-					personEmail: 't.assawadej@gmail.com',
+					personEmail: 'chula.intania.eic@gmail.com',
 					formEnabled: true
 				}
 			})
@@ -409,7 +409,7 @@ export const pages = {
 				],
 				defaults: {
 					tagline: 'Engineering Innovator Club, Chulalongkorn University.',
-					email: 't.assawadej@gmail.com',
+					email: 'chula.intania.eic@gmail.com',
 					address: 'Engineering Building 1, Chulalongkorn University, Bangkok',
 					facebook: 'https://www.facebook.com/eicchulalongkorn',
 					instagram: 'https://www.instagram.com/walkie_eic/',
