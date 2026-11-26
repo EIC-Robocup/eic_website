@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, lte, max, sql } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
-import { posts, projects, siteSections } from '#lib/server/db/schema.ts';
+import { people, posts, projects, siteSections } from '#lib/server/db/schema.ts';
 import type { RequestHandler } from './$types';
 
 /**
@@ -25,7 +25,7 @@ const xml = (text: string) =>
 	text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export const GET: RequestHandler = async ({ url }) => {
-	const [projectRows, postRows, sectionRows] = await Promise.all([
+	const [projectRows, postRows, sectionRows, [peopleRow]] = await Promise.all([
 		db
 			.select({ slug: projects.slug, updatedAt: projects.updatedAt })
 			.from(projects)
@@ -45,7 +45,8 @@ export const GET: RequestHandler = async ({ url }) => {
 		db
 			.select({ page: siteSections.page, updatedAt: max(siteSections.updatedAt) })
 			.from(siteSections)
-			.groupBy(siteSections.page)
+			.groupBy(siteSections.page),
+		db.select({ updatedAt: max(people.updatedAt) }).from(people).where(eq(people.visible, true))
 	]);
 
 	const sectionDate = new Map(sectionRows.map((r) => [r.page, r.updatedAt]));
@@ -54,21 +55,27 @@ export const GET: RequestHandler = async ({ url }) => {
 	const newestPost = latest(...postDates);
 	const newestProject = latest(...projectRows.map((p) => p.updatedAt));
 
+	// Pages that list things change when those things do.
+	const listDate: Record<string, Date | null> = {
+		'/': latest(newestPost, newestProject),
+		'/projects': newestProject,
+		'/people': peopleRow?.updatedAt ?? null,
+		'/blog': newestPost
+	};
+
 	const entries: Entry[] = [
-		...STATIC_PAGES.map(({ path, sections }) => {
-			const own = latest(...sections.map((s) => sectionDate.get(s)));
-			const lists =
-				path === '/blog'
-					? newestPost
-					: path === '/projects'
-						? newestProject
-						: path === '/'
-							? latest(newestPost, newestProject)
-							: null;
-			return { path, lastmod: latest(own, lists) };
-		}),
-		...projectRows.map((p) => ({ path: `/projects/${encodeURIComponent(p.slug)}`, lastmod: p.updatedAt })),
-		...postRows.map((p, i) => ({ path: `/blog/${encodeURIComponent(p.slug)}`, lastmod: postDates[i] }))
+		...STATIC_PAGES.map(({ path, sections }) => ({
+			path,
+			lastmod: latest(listDate[path], ...sections.map((s) => sectionDate.get(s)))
+		})),
+		...projectRows.map((p) => ({
+			path: `/projects/${encodeURIComponent(p.slug)}`,
+			lastmod: p.updatedAt
+		})),
+		...postRows.map((p, i) => ({
+			path: `/blog/${encodeURIComponent(p.slug)}`,
+			lastmod: postDates[i]
+		}))
 	];
 
 	const body = `<?xml version="1.0" encoding="UTF-8"?>

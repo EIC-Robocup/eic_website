@@ -2,9 +2,15 @@
 	A photo, or the crop-marked placeholder that stands in until the photo exists.
 	`rounded` gives it its own frame (hairline border, 10px radius), as hero and gallery
 	figures have; inside a card leave it off and let the card clip the corners.
+
+	Photos from the Supabase media bucket are served through Vercel Image Optimization
+	(#lib/image.ts): the slot builds a srcset by itself, so pass `sizes` with the width the slot
+	takes on the page, e.g. sizes="(min-width: 1264px) 384px, (min-width: 768px) 33vw, 100vw".
+	Site images (/images/...) and other links are used as they are.
 -->
 <script lang="ts">
 	import { cn } from '#lib/utils.js';
+	import { optimizedSrc, srcset as buildSrcset } from '#lib/image.ts';
 
 	type Props = {
 		src?: string | null;
@@ -20,8 +26,12 @@
 		eager?: boolean;
 		/** Placeholder icon size in px (artboards use 26 to 36). */
 		iconSize?: number;
-		/** `sizes` attribute for the image, if the page passes a `srcset`. */
+		/**
+		 * How wide the image is shown, for the browser to pick from the srcset. Default '100vw';
+		 * pass the real width (cards are much narrower) so phones fetch smaller files.
+		 */
 		sizes?: string;
+		/** Your own srcset. By default one is built for media bucket photos. */
 		srcset?: string;
 	};
 
@@ -34,9 +44,12 @@
 		rounded = false,
 		eager = false,
 		iconSize = 32,
-		sizes,
+		sizes = '100vw',
 		srcset
 	}: Props = $props();
+
+	const imgSrc = $derived(src ? optimizedSrc(src, 1280) : null);
+	const imgSrcset = $derived(srcset ?? (src ? buildSrcset(src) : undefined));
 </script>
 
 <div
@@ -47,12 +60,12 @@
 	)}
 	style:aspect-ratio={aspect ?? undefined}
 >
-	{#if src}
+	{#if imgSrc}
 		<img
-			{src}
+			src={imgSrc}
 			{alt}
-			{srcset}
-			{sizes}
+			srcset={imgSrcset}
+			sizes={imgSrcset ? sizes : undefined}
 			loading={eager ? 'eager' : 'lazy'}
 			fetchpriority={eager ? 'high' : undefined}
 			decoding="async"

@@ -16,7 +16,22 @@ export default defineConfig({
 			},
 			// Singapore is the closest Vercel region to Bangkok. Put the Supabase project in
 			// Southeast Asia (Singapore) too, so database calls stay short.
-			adapter: adapter({ runtime: 'nodejs24.x', regions: ['sin1'] })
+			adapter: adapter({
+				runtime: 'nodejs24.x',
+				regions: ['sin1'],
+				// Vercel Image Optimization for photos in the Supabase media bucket, used through
+				// optimizedSrc() and srcset() in src/lib/image.ts (keep `sizes` in sync with
+				// IMAGE_WIDTHS there). Resized copies are cached for 31 days.
+				images: {
+					sizes: [320, 480, 640, 960, 1280, 1920],
+					formats: ['image/avif', 'image/webp'],
+					minimumCacheTTL: 2678400,
+					domains: [],
+					remotePatterns: [
+						{ protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' }
+					]
+				}
+			})
 		})
 	]
 });

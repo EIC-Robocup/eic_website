@@ -18,7 +18,12 @@
 	const hero = $derived(data.sections.hero.data);
 
 	/** /blog with the current filters, changed by `next`. Leaves out empty values. */
-	function blogHref(next: { category?: string | null; tag?: string | null; q?: string | null; page?: number }) {
+	function blogHref(next: {
+		category?: string | null;
+		tag?: string | null;
+		q?: string | null;
+		page?: number;
+	}) {
 		const values = {
 			category: data.filters.category,
 			tag: data.filters.tag,
