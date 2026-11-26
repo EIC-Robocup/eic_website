@@ -29,7 +29,8 @@ export function createRequestClient(event: RequestEvent): SupabaseClient | null 
 			getAll: () => event.cookies.getAll(),
 			setAll: (cookiesToSet, headers) => {
 				for (const { name, value, options } of cookiesToSet) {
-					event.cookies.set(name, value, { ...options, path: '/' });
+					// httpOnly: no browser code ever reads the session (there is no browser Supabase client).
+					event.cookies.set(name, value, { ...options, path: '/', httpOnly: true });
 				}
 				// Responses that set auth cookies must never be cached.
 				if (headers && Object.keys(headers).length) {
