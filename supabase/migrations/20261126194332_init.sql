@@ -63,6 +63,19 @@ CREATE TABLE "media" (
 );
 --> statement-breakpoint
 ALTER TABLE "media" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "messages" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"email" text NOT NULL,
+	"topic" text DEFAULT 'other' NOT NULL,
+	"body" text NOT NULL,
+	"read_at" timestamp with time zone,
+	"archived" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "messages_topic_check" CHECK ("messages"."topic" in ('joining', 'sponsorship', 'research', 'open-source', 'other'))
+);
+--> statement-breakpoint
+ALTER TABLE "messages" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "people" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
@@ -113,6 +126,7 @@ CREATE TABLE "projects" (
 	"title" text NOT NULL,
 	"category" text DEFAULT 'robot' NOT NULL,
 	"year" integer,
+	"year_end" integer,
 	"status" text DEFAULT 'ongoing' NOT NULL,
 	"tagline" text,
 	"summary" text,
@@ -195,5 +209,6 @@ ALTER TABLE "teams" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "people" ADD CONSTRAINT "people_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "activity_created_idx" ON "activity" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "messages_created_idx" ON "messages" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "people_team_idx" ON "people" USING btree ("team_id");--> statement-breakpoint
 CREATE INDEX "posts_status_published_idx" ON "posts" USING btree ("status","published_at");

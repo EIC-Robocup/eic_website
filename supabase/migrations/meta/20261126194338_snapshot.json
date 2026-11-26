@@ -1,6 +1,6 @@
 {
-  "id": "ad395edf-a57e-4cfc-ba45-69bfc41560a6",
-  "prevId": "e3ede2e7-6a0b-41a5-a6b1-5ec9908922a9",
+  "id": "ce018452-2987-4d40-b423-d4af01f0ad4b",
+  "prevId": "2922e41b-8d3f-474a-88ec-a3d7ef64e139",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -376,6 +376,92 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
+    "public.messages": {
+      "name": "messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "topic": {
+          "name": "topic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'other'"
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived": {
+          "name": "archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "messages_created_idx": {
+          "name": "messages_created_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "messages_topic_check": {
+          "name": "messages_topic_check",
+          "value": "\"messages\".\"topic\" in ('joining', 'sponsorship', 'research', 'open-source', 'other')"
+        }
+      },
+      "isRLSEnabled": true
+    },
     "public.people": {
       "name": "people",
       "schema": "",
@@ -730,6 +816,12 @@
         },
         "year": {
           "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "year_end": {
+          "name": "year_end",
           "type": "integer",
           "primaryKey": false,
           "notNull": false

@@ -107,7 +107,10 @@ export const projects = pgTable(
 		slug: text('slug').notNull().unique(),
 		title: text('title').notNull(),
 		category: text('category', { enum: PROJECT_CATEGORIES }).notNull().default('robot'),
+		/** First (or only) year. */
 		year: integer('year'),
+		/** Last year, for projects that ran several years ("2006 to 2008"). */
+		yearEnd: integer('year_end'),
 		status: text('status', { enum: PROJECT_STATUSES }).notNull().default('ongoing'),
 		/** Short line under the title, e.g. "Listens. Navigates. Grasps." */
 		tagline: text('tagline'),
