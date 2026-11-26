@@ -22,6 +22,24 @@ const CALLOUT_LABELS: Record<CalloutType, string> = {
 	caution: 'Caution'
 };
 
+/**
+ * Index of the first line of `src` that matches `line` (anchored at the line start), looking
+ * only at lines containing `needle`. Marked calls `start` for every paragraph with the rest of
+ * the document, so this uses a fast indexOf instead of scanning with a regex each time.
+ */
+export function findLineStart(src: string, needle: string, line: RegExp): number | undefined {
+	let from = 0;
+	while (true) {
+		const hit = src.indexOf(needle, from);
+		if (hit < 0) return undefined;
+		const lineStart = src.lastIndexOf('\n', hit) + 1;
+		if (line.test(src.slice(lineStart, Math.min(src.length, lineStart + 200)))) return lineStart;
+		const next = src.indexOf('\n', hit);
+		if (next < 0) return undefined;
+		from = next + 1;
+	}
+}
+
 const CALLOUT_HEAD = /^ {0,3}> ?\[!(note|tip|important|warning|caution)\][ \t]*([^\n]*)(?:\n|$)/i;
 
 function calloutExtension(ctx: RenderContext): TokenizerAndRendererExtension {
@@ -29,8 +47,7 @@ function calloutExtension(ctx: RenderContext): TokenizerAndRendererExtension {
 		name: 'callout',
 		level: 'block',
 		start(src) {
-			const match = /^ {0,3}> ?\[!(?:note|tip|important|warning|caution)\]/im.exec(src);
-			return match ? match.index : undefined;
+			return findLineStart(src, '[!', /^ {0,3}> ?\[!(?:note|tip|important|warning|caution)\]/i);
 		},
 		tokenizer(src) {
 			const head = CALLOUT_HEAD.exec(src);
@@ -85,8 +102,7 @@ function footnoteDefExtension(ctx: RenderContext): TokenizerAndRendererExtension
 		name: 'footnoteDef',
 		level: 'block',
 		start(src) {
-			const match = /^ {0,3}\[\^[^\]\s]{1,40}\]:/m.exec(src);
-			return match ? match.index : undefined;
+			return findLineStart(src, '[^', /^ {0,3}\[\^[^\]\s]{1,40}\]:/);
 		},
 		tokenizer(src) {
 			const head = FOOTNOTE_DEF.exec(src);
@@ -176,7 +192,8 @@ function markExtension(): TokenizerAndRendererExtension {
 			return index < 0 ? undefined : index;
 		},
 		tokenizer(src) {
-			const match = /^==(?=[^\s=])([^\n]*?[^\s=])==(?!=)/.exec(src);
+			// Bounded, so a long line full of "==" can't make this quadratic.
+			const match = /^==(?=[^\s=])([^\n]{0,300}?[^\s=])==(?!=)/.exec(src);
 			if (!match) return undefined;
 			return { type: 'mark', raw: match[0], text: match[1], tokens: this.lexer.inlineTokens(match[1]) };
 		},

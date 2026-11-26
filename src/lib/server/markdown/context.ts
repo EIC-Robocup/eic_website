@@ -30,8 +30,8 @@ export type Heading = { id: string; text: string; depth: number };
 
 export type FootnoteDef = { label: string; tokens: Token[] };
 
-export const PH_START = '';
-export const PH_END = '';
+export const PH_START = '\uE000';
+export const PH_END = '\uE001';
 
 /** Ids the site already uses on post pages; a heading with that slug gets a suffix. */
 const RESERVED_IDS = ['main', 'top', 'content', 'site-menu', 'admin-main', 'nav', 'footer', 'related', 'toc', 'share'];

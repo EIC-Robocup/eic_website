@@ -400,6 +400,12 @@ function diagrams(root: HTMLElement): Cleanup {
 				pre.replaceWith(figure);
 				details.append(pre);
 				block.append(details);
+				// Wide diagrams scroll sideways: let keyboard users scroll them too.
+				if (block.scrollWidth > block.clientWidth + 1) {
+					block.tabIndex = 0;
+					block.setAttribute('role', 'group');
+					block.setAttribute('aria-label', 'Diagram, scrolls sideways');
+				}
 			} else {
 				const message = document.createElement('p');
 				message.className = 'mermaid-error';

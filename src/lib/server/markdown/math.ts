@@ -10,6 +10,7 @@
 import katex from 'katex';
 import type { TokenizerAndRendererExtension, Tokens } from 'marked';
 import type { RenderContext } from './context.ts';
+import { findLineStart } from './extensions.ts';
 import { escapeHtml } from './util.ts';
 
 /** Longest formula we render (KaTeX also caps macro expansion). */
@@ -50,8 +51,7 @@ export function mathExtensions(ctx: RenderContext): TokenizerAndRendererExtensio
 			name: 'mathBlock',
 			level: 'block',
 			start(src) {
-				const match = /^ {0,3}\$\$/m.exec(src);
-				return match ? match.index : undefined;
+				return findLineStart(src, '$$', /^ {0,3}\$\$/);
 			},
 			tokenizer(src) {
 				const match = /^ {0,3}\$\$((?:\\[\s\S]|[^\\$])+?)\$\$[ \t]*(?:\n+|$)/.exec(src);

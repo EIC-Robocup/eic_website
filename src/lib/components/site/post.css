@@ -668,6 +668,10 @@
 	border-radius: var(--pb-radius);
 	background: var(--pb-code-bg);
 }
+.post-body .mermaid-block:focus-visible {
+	outline: 2px solid var(--eic-focus);
+	outline-offset: 2px;
+}
 .post-body .mermaid-source {
 	margin: 0;
 	color: var(--eic-ink-muted);

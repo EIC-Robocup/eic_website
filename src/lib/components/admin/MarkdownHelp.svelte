@@ -248,9 +248,7 @@
 								</Button>
 							</div>
 							<pre
-								class="m-0 overflow-x-auto rounded-sm border border-line bg-surface-000 px-3 py-2 font-mono text-[12.5px] leading-5 whitespace-pre text-ink [font-variant-ligatures:none]"
-								tabindex="0"
-								aria-label="Example: {entry.name}">{entry.example}</pre>
+								class="m-0 rounded-sm border border-line bg-surface-000 px-3 py-2 font-mono text-[12.5px] leading-5 break-all whitespace-pre-wrap text-ink [font-variant-ligatures:none]">{entry.example}</pre>
 							{#if entry.note}
 								<p class="m-0 text-xs leading-[18px] text-ink-muted">{entry.note}</p>
 							{/if}

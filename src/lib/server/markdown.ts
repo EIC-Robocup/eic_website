@@ -358,7 +358,25 @@ function spliceFragments(ctx: RenderContext, html: string): string {
 }
 
 function cleanSource(markdown: string | null | undefined): string {
-	return (markdown ?? '').replace(/[]/g, '').replace(/\r\n?/g, '\n');
+	return (
+		(markdown ?? '')
+			// Private-use characters are reserved for fragment placeholders (context.ts).
+			.replace(/[\uE000\uE001]/g, '')
+			.replace(/\r\n?/g, '\n')
+			// Marked recurses once per quote level; cap the nesting so a line of ">>>>..." can't
+			// overflow the stack.
+			.replace(/^((?:[ \t]*>){12})(?:[ \t]*>)+/gm, '$1')
+	);
+}
+
+/** Last resort when rendering throws: the text as escaped paragraphs. */
+function plainFallback(source: string): string {
+	return source
+		.split(/\n{2,}/)
+		.map((block) => block.trim())
+		.filter(Boolean)
+		.map((block) => `<p>${escapeHtml(block).replace(/\n/g, '<br>')}</p>`)
+		.join('\n');
 }
 
 const CACHE_LIMIT = 64;
@@ -380,25 +398,39 @@ export function renderPost(markdown: string, opts: RenderOptions = {}): Rendered
 		return copy(hit);
 	}
 
-	const ctx = new RenderContext('html', figureStart);
-	const marked = createMarked(ctx);
-	const tokens = lex(marked, source);
-	let words = 0;
-	marked.walkTokens(tokens, (token) => {
-		words += tokenWords(token);
-	});
+	let result: RenderedPost;
+	try {
+		const ctx = new RenderContext('html', figureStart);
+		const marked = createMarked(ctx);
+		const tokens = lex(marked, source);
+		let words = 0;
+		marked.walkTokens(tokens, (token) => {
+			words += tokenWords(token);
+		});
 
-	let html = marked.parser(tokens);
-	html += renderFootnotes(ctx, (blocks) => marked.parser(blocks));
-	html = spliceFragments(ctx, sanitizeMain(html));
+		let html = marked.parser(tokens);
+		html += renderFootnotes(ctx, (blocks) => marked.parser(blocks));
+		html = spliceFragments(ctx, sanitizeMain(html));
 
-	const result: RenderedPost = {
-		html,
-		headings: ctx.headings,
-		readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
-		words,
-		features: ctx.features
-	};
+		result = {
+			html,
+			headings: ctx.headings,
+			readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+			words,
+			features: ctx.features
+		};
+	} catch (err) {
+		// A post should never take its page down: show it as plain text instead.
+		console.error('Markdown rendering failed; showing the post as plain text', err);
+		const words = countWords(source);
+		result = {
+			html: plainFallback(source),
+			headings: [],
+			readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+			words,
+			features: { math: false, mermaid: false, model: false, video: false, embed: false }
+		};
+	}
 	cache.set(key, result);
 	if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
 	return copy(result);
@@ -428,11 +460,17 @@ function decodeEntities(text: string): string {
  * diagrams, embeds or image alt text), math as its TeX source.
  */
 export function markdownToText(source: string): string {
-	const ctx = new RenderContext('text');
-	const marked = createMarked(ctx);
-	const tokens = lex(marked, cleanSource(source));
-	let html = marked.parser(tokens);
-	html += renderFootnotes(ctx, (blocks) => marked.parser(blocks));
+	const clean = cleanSource(source);
+	let html: string;
+	try {
+		const ctx = new RenderContext('text');
+		const marked = createMarked(ctx);
+		const tokens = lex(marked, clean);
+		html = marked.parser(tokens);
+		html += renderFootnotes(ctx, (blocks) => marked.parser(blocks));
+	} catch {
+		html = escapeHtml(clean);
+	}
 	return decodeEntities(stripTags(html.replace(/<\/(p|h[1-6]|li|td|th|div|blockquote)>/gi, ' $&')))
 		.replace(/\s+/g, ' ')
 		.trim();
@@ -440,13 +478,18 @@ export function markdownToText(source: string): string {
 
 /** Words in a post (Thai counted by word, not by space). */
 export function countPostWords(source: string): number {
-	const ctx = new RenderContext('text');
-	const marked = createMarked(ctx);
-	let words = 0;
-	marked.walkTokens(lex(marked, cleanSource(source)), (token) => {
-		words += tokenWords(token);
-	});
-	return words;
+	const clean = cleanSource(source);
+	try {
+		const ctx = new RenderContext('text');
+		const marked = createMarked(ctx);
+		let words = 0;
+		marked.walkTokens(lex(marked, clean), (token) => {
+			words += tokenWords(token);
+		});
+		return words;
+	} catch {
+		return countWords(clean);
+	}
 }
 
 /** Reading time at 220 words a minute, at least one minute. Cheap: lexes, no rendering. */
