@@ -1,0 +1,86 @@
+import { sequence, type Handle } from '@sveltejs/kit/hooks';
+
+import { dev } from '$app/env';
+import { DEV_AUTH_EMAIL } from '$app/env/private';
+import { findEditor } from '#lib/server/auth.js';
+import { createRequestClient } from '#lib/server/supabase.js';
+
+/** Attach a per-request Supabase auth client and a cached, verified user lookup. */
+const supabase: Handle = async ({ event, resolve }) => {
+	event.locals.supabase = createRequestClient(event);
+	event.locals.editor = null;
+
+	let userPromise: Promise<App.AuthUser | null> | undefined;
+	event.locals.getUser = () => {
+		userPromise ??= (async () => {
+			if (dev && DEV_AUTH_EMAIL) return { id: null, email: DEV_AUTH_EMAIL };
+			const client = event.locals.supabase;
+			if (!client) return null;
+			// getClaims() verifies the session token; never trust getSession() on the server.
+			const { data, error } = await client.auth.getClaims();
+			if (error || !data?.claims?.sub) return null;
+			const email = typeof data.claims.email === 'string' ? data.claims.email : null;
+			if (!email) return null;
+			return { id: data.claims.sub, email };
+		})().catch((err) => {
+			console.error('Could not verify the session', err);
+			return null;
+		});
+		return userPromise;
+	};
+
+	return resolve(event, {
+		filterSerializedResponseHeaders: (name) =>
+			name === 'content-range' || name === 'x-supabase-api-version'
+	});
+};
+
+/** Paths under /admin that work without being signed in. */
+const PUBLIC_ADMIN_PATHS = new Set(['/admin/login', '/admin/logout']);
+
+/**
+ * Guard the admin panel. Sets `locals.editor` for invited editors. Requests that
+ * change data (anything but GET/HEAD) and admin API routes are refused here when
+ * nobody is signed in; page loads are redirected to sign in by the admin layout.
+ */
+const admin: Handle = async ({ event, resolve }) => {
+	const path = event.url.pathname;
+	const isAdmin = path === '/admin' || path.startsWith('/admin/');
+	if (!isAdmin) return resolve(event);
+
+	const user = await event.locals.getUser();
+	if (user) {
+		try {
+			event.locals.editor = await findEditor(user.email, user.id ?? undefined);
+		} catch (err) {
+			console.error('Could not look up the editor', err);
+			event.locals.editor = null;
+		}
+	}
+
+	const isPublic = PUBLIC_ADMIN_PATHS.has(path);
+	const changesData = event.request.method !== 'GET' && event.request.method !== 'HEAD';
+	if (!event.locals.editor && !isPublic && (changesData || path.startsWith('/admin/api/'))) {
+		return new Response('Sign in to continue.', {
+			status: 401,
+			headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }
+		});
+	}
+
+	const response = await resolve(event);
+	response.headers.set('cache-control', 'private, no-store');
+	response.headers.set('x-robots-tag', 'noindex, nofollow');
+	return response;
+};
+
+/** Baseline security headers for every response. */
+const securityHeaders: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+	response.headers.set('x-content-type-options', 'nosniff');
+	response.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+	response.headers.set('x-frame-options', 'SAMEORIGIN');
+	response.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+	return response;
+};
+
+export const handle = sequence(securityHeaders, supabase, admin);
