@@ -106,7 +106,9 @@
 				<input type="hidden" name={key} {value} />
 			{/each}
 			<AlertDialog.Footer>
+				<!-- type="button": inside the form, a plain <button> would submit the delete. -->
 				<AlertDialog.Cancel
+					type="button"
 					class="h-11 rounded-sm border-line-strong bg-transparent px-4 hover:border-ink dark:border-line-strong dark:bg-transparent dark:hover:bg-transparent"
 					disabled={form.pending}>Cancel</AlertDialog.Cancel
 				>
