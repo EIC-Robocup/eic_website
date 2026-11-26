@@ -42,12 +42,25 @@ sql_paths = ["./seed.sql"]
 enabled = true
 file_size_limit = "50MiB"
 
-# Public bucket for admin uploads. Also created by the storage_media_bucket migration.
-# No SVG: an SVG in the bucket could run scripts on the storage origin.
+# Public bucket for admin uploads. Also set by the storage_media_bucket and media_bucket_types
+# migrations. 50 MiB is the largest per-type limit (videos); the app checks the others (images
+# 10 MB, PDFs 20 MB, 3D models 25 MB). No SVG: an SVG in the bucket could run scripts on the
+# storage origin.
 [storage.buckets.media]
 public = true
-file_size_limit = "10MiB"
-allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/avif", "application/pdf"]
+file_size_limit = "50MiB"
+allowed_mime_types = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "application/pdf",
+  "video/mp4",
+  "video/webm",
+  "model/gltf-binary",
+  "model/gltf+json",
+]
 
 [auth]
 enabled = true

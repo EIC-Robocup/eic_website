@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import ImageSlot from '#lib/components/site/ImageSlot.svelte';
+	import PostBody from '#lib/components/site/PostBody.svelte';
 	import PostCard from '#lib/components/site/PostCard.svelte';
 	import Seo from '#lib/components/site/Seo.svelte';
 	import Tag from '#lib/components/site/Tag.svelte';
@@ -23,9 +24,7 @@
 	const author = $derived(post.authorName ?? 'EIC Chula');
 	const url = $derived(page.url.origin + page.url.pathname);
 	const showToc = $derived(data.headings.length >= 3);
-	const meta = $derived(
-		[formatDate(post.publishedAt), readingTime(data.readingMinutes)].filter(Boolean).join(' · ')
-	);
+	const minutes = $derived(readingTime(data.readingMinutes));
 
 	let article = $state<HTMLElement>();
 
@@ -34,7 +33,7 @@
 
 	const jsonLd = $derived.by(() => {
 		const origin = page.url.origin;
-		const data_ = {
+		const ld = {
 			'@context': 'https://schema.org',
 			'@type': 'BlogPosting',
 			headline: post.title,
@@ -57,7 +56,7 @@
 			inLanguage: 'en'
 		};
 		// "<" is escaped so the JSON can never close the script element early.
-		const json = JSON.stringify(data_).replace(/</g, '\\u003c');
+		const json = JSON.stringify(ld).replace(/</g, '\\u003c');
 		return `<script type="application/ld+json">${json}</` + `script>`;
 	});
 </script>
@@ -101,12 +100,10 @@
 					>
 					<span class="flex min-w-0 flex-col gap-0.5">
 						<span class="text-[15px] font-semibold">{author}</span>
-						{#if meta}
-							<span class="text-sm text-ink-muted">
-								<time datetime={isoDate(post.publishedAt)}>{formatDate(post.publishedAt)}</time
-								>{#if readingTime(data.readingMinutes)}{' · '}{readingTime(data.readingMinutes)}{/if}
-							</span>
-						{/if}
+						<span class="text-sm text-ink-muted">
+							<time datetime={isoDate(post.publishedAt)}>{formatDate(post.publishedAt)}</time
+							>{#if minutes}{' · '}{minutes}{/if}
+						</span>
 					</span>
 				</div>
 			</div>
@@ -122,6 +119,7 @@
 					label="Cover photo"
 					aspect="16 / 8"
 					iconSize={36}
+					sizes="(min-width: 1264px) 1200px, 100vw"
 					eager
 				/>
 				<figcaption class="text-label border-t border-line px-5 py-3.5 text-ink-muted">
@@ -167,12 +165,10 @@
 				</details>
 			{/if}
 
-			<div class="[&_:is(h2,h3,h4)]:scroll-mt-28">
-				<!-- TEMP until #lib/components/site/PostBody.svelte lands -->
-				<div class="prose prose-invert max-w-none">{@html data.html}</div>
-			</div>
+			<!-- PostBody adds the KaTeX stylesheet itself when the post has math. -->
+			<PostBody html={data.html} />
 
-			<footer class="flex flex-col gap-7 pt-4 pb-16 md:pb-20">
+			<footer class="flex flex-col gap-7 pt-10 pb-16 md:pb-20">
 				{#if post.tags.length}
 					<ul aria-label="Tags" class="m-0 flex list-none flex-wrap gap-2 p-0">
 						{#each post.tags as tag (tag)}
@@ -197,7 +193,9 @@
 							>Part of the {post.project.title} project <span aria-hidden="true">→</span></a
 						>
 					{/if}
-					<ShareButtons {url} title={post.title} text={post.excerpt} />
+					<div class={[!post.project && 'sm:ml-auto']}>
+						<ShareButtons {url} title={post.title} text={post.excerpt} />
+					</div>
 				</div>
 			</footer>
 		</div>

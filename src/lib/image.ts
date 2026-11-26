@@ -43,7 +43,7 @@ function clampQuality(quality: number): number {
  * The URL to show `url` at about `width` CSS pixels wide. Rewritten to `/_vercel/image` for
  * Supabase Storage images outside dev; returned unchanged otherwise.
  */
-export function optimizedSrc(url: string, width: number, quality = DEFAULT_QUALITY): string;
+export function optimizedSrc(url: string, width: number, quality?: number): string;
 export function optimizedSrc(url: string | null | undefined, width: number, quality?: number): string | null | undefined;
 export function optimizedSrc(url: string | null | undefined, width: number, quality = DEFAULT_QUALITY) {
 	if (dev || !isOptimizable(url)) return url;

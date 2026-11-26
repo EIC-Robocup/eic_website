@@ -1,8 +1,10 @@
 <!--
 	An image picker for forms. Empty, it is a dashed drop zone ("Upload or drop, or paste a
 	link"); filled, it shows the image with Replace and Remove, plus an alt text box.
-	Uploads go to /admin/api/upload (big photos are resized in the browser first) with a
-	progress bar and a Cancel button; problems show as toasts.
+	Uploads go straight to Supabase Storage through uploadFile() (upload.ts): photos are resized
+	to 2400px and re-encoded as WebP in the browser first, with a progress bar and a Cancel
+	button; the toast says how much was saved ("4.2 MB → 380 KB"). Problems show as toasts.
+	`qualityOption` adds a "Keep original quality" checkbox that skips the re-encoding.
 
 	With `name="cover"` the form submits `coverUrl` and `coverAlt`, matching the coverUrl and
 	coverAlt columns. Read them on the server with `readImage(form, 'cover')` from form-data.ts.
@@ -17,14 +19,16 @@
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import ImageIcon from '@lucide/svelte/icons/image';
+	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
 	import AdminButton from './AdminButton.svelte';
 	import { hintClass, inputClass, labelClass } from './styles.ts';
 	import {
 		IMAGE_TYPES,
+		acceptAttribute,
 		checkFile,
-		prepareImage,
+		savings,
 		uploadFile,
 		type UploadFolder,
 		type UploadedMedia
@@ -60,6 +64,10 @@
 		disabled?: boolean;
 		/** True while a file uploads. Bindable, e.g. to disable Save meanwhile. */
 		uploading?: boolean;
+		/** Show a "Keep original quality" checkbox (skips resizing and WebP re-encoding). */
+		qualityOption?: boolean;
+		/** Upload without re-encoding. Bindable; the checkbox above sets it. */
+		keepOriginal?: boolean;
 		/** After each successful upload, with the new media row. */
 		onupload?: (media: UploadedMedia) => void;
 		/** After the image or alt text changes. */
@@ -85,6 +93,8 @@
 		accept = IMAGE_TYPES,
 		disabled = false,
 		uploading = $bindable(false),
+		qualityOption = false,
+		keepOriginal = $bindable(false),
 		onupload,
 		onchange,
 		id,
@@ -123,22 +133,19 @@
 		progress = 0;
 		controller = new AbortController();
 		try {
-			const prepared = await prepareImage(file);
-			if (typeof prepared === 'string') {
-				toast.error(prepared);
-				return;
-			}
-			const media = await uploadFile(prepared, {
+			const media = await uploadFile(file, {
 				folder,
 				alt,
+				keepOriginal,
 				signal: controller.signal,
-				onProgress: (p) => (progress = p)
+				onProgress: (fraction) => (progress = Math.round(fraction * 100))
 			});
 			url = media.url;
 			linkMode = false;
 			emit();
 			onupload?.(media);
-			toast.success('Image uploaded.');
+			const saved = savings(media);
+			toast.success('Image uploaded.', saved ? { description: `Compressed ${saved}.` } : undefined);
 			if (withAlt && !alt) {
 				await tick();
 				altInput?.focus();
@@ -260,7 +267,7 @@
 		role="status"
 	>
 		<Spinner aria-hidden="true" aria-label="" role="presentation" />
-		<span>{progress < 100 ? `Uploading ${progress}%` : 'Saving'}</span>
+		<span>{progress < 2 ? 'Preparing' : progress < 96 ? `Uploading ${progress}%` : 'Saving'}</span>
 		{#if !round}
 			<span class="h-1 w-full max-w-40 overflow-hidden rounded-full bg-surface-300" aria-hidden="true">
 				<span class="block h-full bg-brand transition-[width]" style="width: {progress}%"></span>
@@ -397,6 +404,14 @@
 		</div>
 	{/if}
 
+	{#if qualityOption && variant === 'drop'}
+		<label class="flex min-h-8 w-fit cursor-pointer items-center gap-2 text-xs leading-[18px] text-ink-muted">
+			<Checkbox bind:checked={keepOriginal} disabled={disabled || uploading} aria-describedby="{baseId}-quality-hint" />
+			<span>Keep original quality</span>
+			<span id="{baseId}-quality-hint" class="sr-only">Uploads the file as it is, without resizing or converting to WebP.</span>
+		</label>
+	{/if}
+
 	{#if withAlt && url}
 		<div class="flex flex-col gap-1.5 pt-1">
 			<label for="{baseId}-alt" class={labelClass}>Alt text</label>
@@ -422,7 +437,7 @@
 		bind:this={fileInput}
 		type="file"
 		class="hidden"
-		accept={accept.join(',')}
+		accept={acceptAttribute(accept)}
 		tabindex="-1"
 		aria-hidden="true"
 		onchange={onfilechange}

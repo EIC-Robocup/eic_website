@@ -29,6 +29,13 @@
       "when": 1795724791509,
       "tag": "20261126202631_achievement_entrants",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795725530074,
+      "tag": "20261126203850_media_bucket_types",
+      "breakpoints": true
     }
   ]
 }

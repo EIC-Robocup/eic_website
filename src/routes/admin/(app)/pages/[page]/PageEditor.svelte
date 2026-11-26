@@ -197,7 +197,7 @@
 				].join(' ')}
 			>
 				<span class="min-w-0">{item.title}</span>
-				<span class="shrink-0 font-mono text-[11px] font-normal text-ink-muted">
+				<span class="hidden shrink-0 font-mono text-[11px] font-normal text-ink-muted sm:inline">
 					{item.sections === 1 ? '1 section' : `${item.sections} sections`}
 				</span>
 			</AdminButton>
