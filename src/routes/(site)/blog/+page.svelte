@@ -49,8 +49,7 @@
 		clearTimeout(timer);
 		sentQuery = query.trim();
 		goto(blogHref({ category: value === 'all' ? null : value, q: sentQuery || null }), {
-			noScroll: true,
-			keepFocus: true
+			reset: false
 		});
 	}
 
@@ -78,9 +77,8 @@
 		if (q === sentQuery) return;
 		sentQuery = q;
 		goto(blogHref({ q: q || null, category: category === 'all' ? null : category }), {
-			replaceState: true,
-			noScroll: true,
-			keepFocus: true
+			replace: true,
+			reset: false
 		});
 	}
 
@@ -120,7 +118,7 @@
 		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
 		event.preventDefault();
 		const target = firstNew;
-		await goto(olderHref, { noScroll: true, keepFocus: true });
+		await goto(olderHref, { reset: false });
 		document.querySelector<HTMLElement>(`#post-${target} a`)?.focus();
 	}
 
