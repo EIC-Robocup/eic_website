@@ -1,6 +1,6 @@
 -- Public bucket for images and files uploaded through the admin panel.
 -- Anyone can read files by URL; only the server (with the secret key) uploads or deletes,
--- so no storage policies are needed.
+-- so no storage policies are needed. No SVG: it could run scripts on the storage origin.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
 	'media',
@@ -13,7 +13,6 @@ values (
 		'image/webp',
 		'image/gif',
 		'image/avif',
-		'image/svg+xml',
 		'application/pdf'
 	]
 )

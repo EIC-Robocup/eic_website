@@ -3,14 +3,16 @@ import { getAdminClient } from './supabase';
 
 export const MEDIA_BUCKET = 'media';
 
-/** Matches the bucket's allowed types in supabase/migrations. */
+/**
+ * Matches the bucket's allowed types in supabase/migrations and config.toml.
+ * No SVG: an SVG in the bucket could run scripts on the supabase.co origin.
+ */
 export const ALLOWED_UPLOAD_TYPES = [
 	'image/png',
 	'image/jpeg',
 	'image/webp',
 	'image/gif',
 	'image/avif',
-	'image/svg+xml',
 	'application/pdf'
 ] as const;
 
@@ -40,7 +42,7 @@ export async function uploadMedia(file: File, folder = 'uploads'): Promise<Uploa
 	if (!(file instanceof File) || file.size === 0) error(400, 'Choose a file to upload.');
 	if (file.size > MAX_UPLOAD_BYTES) error(400, 'Files must be 10 MB or smaller.');
 	if (!(ALLOWED_UPLOAD_TYPES as readonly string[]).includes(file.type)) {
-		error(400, 'Upload a PNG, JPEG, WebP, GIF, AVIF, SVG or PDF file.');
+		error(400, 'Upload a PNG, JPEG, WebP, GIF, AVIF or PDF file.');
 	}
 
 	const cleanFolder = folder.replace(/[^a-z0-9/-]/gi, '').replace(/^\/+|\/+$/g, '') || 'uploads';

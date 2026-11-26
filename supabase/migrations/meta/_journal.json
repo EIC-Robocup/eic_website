@@ -15,6 +15,13 @@
       "when": 1795720681815,
       "tag": "20261126191801_storage_media_bucket",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795721372950,
+      "tag": "20261126192932_revoke_data_api_access",
+      "breakpoints": true
     }
   ]
 }

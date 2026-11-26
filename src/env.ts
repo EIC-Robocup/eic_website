@@ -16,6 +16,11 @@ export const variables = defineEnvVars({
 			'Postgres connection string. In production use the Supabase transaction pooler (port 6543).',
 		schema: optional
 	},
+	POSTGRES_URL: {
+		description:
+			'Set by the Supabase integration on Vercel. Used when DATABASE_URL is not set (e.g. on preview branches).',
+		schema: optional
+	},
 	SUPABASE_URL: {
 		description: 'Supabase project URL, e.g. https://abcd1234.supabase.co',
 		schema: optional
@@ -25,7 +30,8 @@ export const variables = defineEnvVars({
 		schema: optional
 	},
 	SUPABASE_ANON_KEY: {
-		description: 'Legacy Supabase anon key. Used only when SUPABASE_PUBLISHABLE_KEY is not set.',
+		description:
+			'Legacy Supabase anon key, used only when SUPABASE_PUBLISHABLE_KEY is not set. Legacy keys stop working at the end of 2026.',
 		schema: optional
 	},
 	SUPABASE_SECRET_KEY: {
