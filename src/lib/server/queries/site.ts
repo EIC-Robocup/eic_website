@@ -466,17 +466,12 @@ export async function getPublishedPostBySlug(slug: string): Promise<PostDetail |
 
 	const { projectSlug, projectTitle, updatedAt, ...cardRow } = row;
 	const card = toPostCard(cardRow);
-	const sameProject = row.projectId
-		? sql`coalesce(${posts.projectId} = ${row.projectId}, false)`
-		: sql`false`;
-	const related = await selectPostCards(ne(posts.id, row.id), {
-		orderBy: [
-			desc(sql`(${posts.category} = ${row.category})`),
-			desc(sameProject),
-			desc(posts.publishedAt)
-		],
-		limit: 3
-	});
+	// Same category first, then same project (only when the post has one: Postgres rejects a
+	// constant like `false` in ORDER BY), then newest.
+	const order = [desc(sql`(${posts.category} = ${row.category})`)];
+	if (row.projectId) order.push(desc(sql`coalesce(${posts.projectId} = ${row.projectId}, false)`));
+	order.push(desc(posts.publishedAt));
+	const related = await selectPostCards(ne(posts.id, row.id), { orderBy: order, limit: 3 });
 
 	return {
 		...card,
