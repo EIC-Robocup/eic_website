@@ -138,23 +138,23 @@
 		<!-- Each cell draws hairlines on its right and bottom; the frame clips the outer ones,
 		     so a short last row leaves no grey gaps. -->
 		<div class="overflow-hidden rounded-lg border border-line">
-		<ul
-			class="m-0 -mr-px -mb-px grid list-none grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] p-0"
-		>
-			{#each stats as stat, i (i)}
-				<li
-					class="flex flex-col gap-2.5 bg-surface-100 p-7 shadow-[inset_-1px_0_0_var(--eic-line),inset_0_-1px_0_var(--eic-line)]"
-				>
-					<span
-						class={[
-							'font-display text-[52px] leading-none font-medium tracking-[-0.035em]',
-							i === 0 ? 'text-brand-text' : 'text-ink'
-						]}>{stat.value}</span
+			<ul
+				class="m-0 -mr-px -mb-px grid list-none grid-cols-2 p-0 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]"
+			>
+				{#each stats as stat, i (i)}
+					<li
+						class="flex min-w-0 flex-col gap-2.5 bg-surface-100 p-5 shadow-[inset_-1px_0_0_var(--eic-line),inset_0_-1px_0_var(--eic-line)] sm:p-7"
 					>
-					{#if stat.label}<span class="text-label text-ink-muted">{stat.label}</span>{/if}
-				</li>
-			{/each}
-		</ul>
+						<span
+							class={[
+								'font-display text-[clamp(34px,10vw,52px)] leading-none font-medium tracking-[-0.035em] break-words',
+								i === 0 ? 'text-brand-text' : 'text-ink'
+							]}>{stat.value}</span
+						>
+						{#if stat.label}<span class="text-label text-ink-muted">{stat.label}</span>{/if}
+					</li>
+				{/each}
+			</ul>
 		</div>
 	</section>
 {/if}
@@ -225,8 +225,8 @@
 					{#if cta?.text}
 						<span
 							class="text-[15px] font-medium whitespace-nowrap text-brand-text transition-colors duration-150 group-hover:text-ink"
-							><span id="featured-cta">{cta.text}</span>{#if cta.arrow}<span aria-hidden="true">
-									{cta.arrow}</span
+							><span id="featured-cta">{cta.text}</span>{#if cta.arrow}{' '}<span aria-hidden="true"
+									>{cta.arrow}</span
 								>{/if}</span
 						>
 					{/if}

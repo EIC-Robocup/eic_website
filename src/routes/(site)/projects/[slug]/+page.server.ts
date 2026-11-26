@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { getProjectBySlug } from '#lib/server/queries/site.ts';
 import { PROJECT_STATUS_LABELS, labelFor } from '#lib/content/labels.ts';
 import { projectCategoryLabel } from '#lib/components/site/format.ts';
-import { isGitHub, yearRange } from '../project-meta.ts';
+import { cardMeta, isGitHub } from '../project-meta.ts';
 import type { PageServerLoad } from './$types';
 
 /** Gallery photos captioned like "Parts laid out" go beside the parts list instead. */
@@ -43,13 +43,10 @@ export const load: PageServerLoad = async ({ params }) => {
 			title: project.title,
 			category: project.category,
 			status: project.status,
-			/** "Robot · RoboCup@Home 2026", or the years when there is no event. */
-			meta: [
-				projectCategoryLabel(project.category),
-				clean(project.event) || yearRange(project.year, project.yearEnd)
-			]
-				.filter(Boolean)
-				.join(' · '),
+			/** "Robot · RoboCup@Home 2026"; without an event, the card's line ("Open source · Python"). */
+			meta: clean(project.event)
+				? `${projectCategoryLabel(project.category)} · ${clean(project.event)}`
+				: cardMeta(project),
 			tagline: clean(project.tagline),
 			summary: clean(project.summary),
 			coverUrl: clean(project.coverUrl) || null,

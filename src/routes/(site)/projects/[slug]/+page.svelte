@@ -130,6 +130,8 @@
 					>
 						{p.tagline}
 					</p>
+				{:else if p.summary}
+					<p class="m-0 max-w-[36em] text-[19px] leading-[30px] text-ink-muted">{p.summary}</p>
 				{/if}
 			</div>
 			<TitleBlock dwg={p.title.toUpperCase()} sheet="03" />
@@ -322,7 +324,7 @@
 				id="gallery-title"
 			/>
 			<ul
-				class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))] gap-4 p-0"
+				class="m-0 grid list-none grid-cols-2 gap-x-3 gap-y-5 p-0 sm:grid-cols-[repeat(auto-fill,minmax(250px,1fr))] sm:gap-4"
 			>
 				{#each p.gallery as photo, i (i)}
 					<li class="min-w-0">

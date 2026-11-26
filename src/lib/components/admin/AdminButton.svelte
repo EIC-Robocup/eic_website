@@ -35,6 +35,7 @@
 	};
 
 	let {
+		ref = $bindable(null),
 		variant = 'primary',
 		size = 'md',
 		pending = false,
@@ -75,6 +76,7 @@
 </script>
 
 <Button
+	bind:ref
 	variant={base[variant]}
 	{href}
 	target={href && external ? '_blank' : undefined}

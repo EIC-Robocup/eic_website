@@ -2,12 +2,21 @@
 	The About page message form. Works without JavaScript (the browser checks the fields,
 	the action answers with errors or the thank you note). With JavaScript it checks the
 	fields first, shows errors next to them, and swaps in the thank you note in place.
+
+	Controls are the shadcn-svelte Input, Textarea, Label and Button with the EIC sizes. The
+	topic stays a native <select>: the shadcn Select needs JavaScript to open, and this form
+	must work without it.
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
-	import type { SubmitFunction } from '@sveltejs/kit';
+	import type { SubmitFunction } from './$types';
 	import { MESSAGE_TOPIC_OPTIONS } from '#lib/content/labels.ts';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { Textarea } from '#lib/components/ui/textarea/index.js';
+	import { cn } from '#lib/utils.js';
 	import {
 		FIELD,
 		FIELD_ORDER,
@@ -60,6 +69,17 @@
 		message: 'contact-message'
 	} as const;
 	const errorId = (field: keyof typeof ids) => `${ids[field]}-error`;
+	const fieldAttrs = (field: keyof typeof ids) => ({
+		id: ids[field],
+		'aria-invalid': errors[field] ? ('true' as const) : undefined,
+		'aria-describedby': errors[field] ? errorId(field) : undefined
+	});
+
+	const unsentMessage = $derived(
+		fallbackEmail
+			? `We could not send your message just now. Try again in a minute, or email us at ${fallbackEmail}.`
+			: 'We could not send your message just now. Try again in a minute.'
+	);
 
 	async function focusProblem() {
 		await tick();
@@ -84,9 +104,7 @@
 		return async ({ result: res, update }) => {
 			pending = false;
 			if (res.type === 'error') {
-				formError = fallbackEmail
-					? `We could not send your message just now. Try again in a minute, or email us at ${fallbackEmail}.`
-					: 'We could not send your message just now. Try again in a minute.';
+				formError = unsentMessage;
 				void focusProblem();
 				return;
 			}
@@ -109,11 +127,12 @@
 		document.getElementById(ids.name)?.focus();
 	}
 
-	const label = 'flex flex-col gap-2';
-	const labelText = 'text-sm leading-5 font-medium text-ink';
-	const control =
-		'block min-h-12 w-full rounded-sm border border-line-strong bg-surface-100 px-3.5 py-3 text-base leading-6 text-ink transition-colors duration-150 placeholder:text-ink-muted hover:border-ink aria-invalid:border-brand-text';
-	const errorText = 'text-sm leading-5 text-brand-text';
+	const fieldClass = 'flex min-w-0 flex-col gap-2';
+	const labelClass = 'text-sm leading-5 font-medium text-ink';
+	/** The EIC control: 48px tall, 6px radius, line-strong border on the page colour. */
+	const controlClass =
+		'min-h-12 rounded-sm border-line-strong bg-surface-100 px-3.5 py-3 text-base leading-6 text-ink shadow-none hover:border-ink md:text-base dark:bg-surface-100';
+	const errorClass = 'm-0 text-sm leading-5 text-brand-text';
 </script>
 
 {#if sent}
@@ -141,16 +160,16 @@
 		>
 			Message sent.
 		</h3>
-		<p class="m-0 max-w-[32em] text-base leading-[26px] text-ink-muted" role="status">
+		<p class="m-0 max-w-[32em] text-base leading-[26px] text-ink-muted">
 			Thanks. We read every message and reply within a week.
 		</p>
-		<button
-			type="button"
+		<Button
+			variant="outline"
 			onclick={sendAnother}
-			class="mt-2 inline-flex min-h-12 cursor-pointer items-center justify-center rounded-sm border border-line-strong px-[22px] text-[15px] leading-5 font-medium text-ink transition-colors duration-150 hover:border-ink"
+			class="mt-2 h-auto min-h-12 rounded-sm border-line-strong bg-transparent px-[22px] text-[15px] leading-5 text-ink shadow-none hover:border-ink hover:bg-transparent dark:border-line-strong dark:bg-transparent dark:hover:bg-transparent"
 		>
 			Send another message
-		</button>
+		</Button>
 	</div>
 {:else}
 	<form
@@ -160,7 +179,7 @@
 		aria-label="Send us a message"
 		aria-busy={pending}
 		use:enhance={submit}
-		class="relative grid min-w-0 flex-[999_1_480px] grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-5 self-start rounded-lg border border-line bg-surface-200 p-5 sm:p-8"
+		class="relative grid min-w-0 flex-[999_1_480px] grid-cols-1 gap-5 sm:grid-cols-2 self-start rounded-lg border border-line bg-surface-200 p-5 sm:p-8"
 	>
 		<input type="hidden" name={FIELD.token} value={currentToken} />
 
@@ -183,53 +202,50 @@
 			</p>
 		{/if}
 
-		<div class={label}>
-			<label for={ids.name} class={labelText}>Name</label>
-			<input
-				id={ids.name}
-				class={control}
+		<div class={fieldClass}>
+			<Label for={ids.name} class={labelClass}>Name</Label>
+			<Input
+				{...fieldAttrs('name')}
+				class={controlClass}
 				type="text"
 				name={FIELD.name}
 				autocomplete="name"
 				required
 				maxlength={LIMITS.name}
 				value={values.name}
-				aria-invalid={errors.name ? 'true' : undefined}
-				aria-describedby={errors.name ? errorId('name') : undefined}
 			/>
-			{#if errors.name}<p id={errorId('name')} class={errorText}>{errors.name}</p>{/if}
+			{#if errors.name}<p id={errorId('name')} class={errorClass}>{errors.name}</p>{/if}
 		</div>
 
-		<div class={label}>
-			<label for={ids.email} class={labelText}>Email</label>
-			<input
-				id={ids.email}
-				class={control}
+		<div class={fieldClass}>
+			<Label for={ids.email} class={labelClass}>Email</Label>
+			<Input
+				{...fieldAttrs('email')}
+				class={controlClass}
 				type="email"
 				name={FIELD.email}
 				autocomplete="email"
-				inputmode="email"
 				spellcheck="false"
 				required
 				maxlength={LIMITS.email}
 				value={values.email}
-				aria-invalid={errors.email ? 'true' : undefined}
-				aria-describedby={errors.email ? errorId('email') : undefined}
 			/>
-			{#if errors.email}<p id={errorId('email')} class={errorText}>{errors.email}</p>{/if}
+			{#if errors.email}<p id={errorId('email')} class={errorClass}>{errors.email}</p>{/if}
 		</div>
 
-		<div class={['col-span-full', label]}>
-			<label for={ids.topic} class={labelText}>I am interested in</label>
+		<div class={['col-span-full', fieldClass]}>
+			<Label for={ids.topic} class={labelClass}>I am interested in</Label>
 			<div class="relative">
+				<!-- Same look as the shadcn Input (focus ring, invalid state), but native. -->
 				<select
-					id={ids.topic}
-					class={[control, 'cursor-pointer appearance-none pr-11']}
+					{...fieldAttrs('topic')}
+					class={cn(
+						'w-full min-w-0 cursor-pointer appearance-none border pr-11 transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20',
+						controlClass
+					)}
 					name={FIELD.topic}
 					required
 					bind:value={topic}
-					aria-invalid={errors.topic ? 'true' : undefined}
-					aria-describedby={errors.topic ? errorId('topic') : undefined}
 				>
 					{#each MESSAGE_TOPIC_OPTIONS as option (option.value)}
 						<option value={option.value}>{option.label}</option>
@@ -248,34 +264,32 @@
 					aria-hidden="true"><path d="M3 5.5 L7 9.5 L11 5.5" /></svg
 				>
 			</div>
-			{#if errors.topic}<p id={errorId('topic')} class={errorText}>{errors.topic}</p>{/if}
+			{#if errors.topic}<p id={errorId('topic')} class={errorClass}>{errors.topic}</p>{/if}
 		</div>
 
-		<div class={['col-span-full', label]}>
-			<label for={ids.message} class={labelText}>Message</label>
-			<textarea
-				id={ids.message}
-				class={[control, 'resize-y']}
+		<div class={['col-span-full', fieldClass]}>
+			<Label for={ids.message} class={labelClass}>Message</Label>
+			<Textarea
+				{...fieldAttrs('message')}
+				class={cn(controlClass, 'field-sizing-fixed min-h-[148px] resize-y')}
 				name={FIELD.message}
-				rows="5"
+				rows={5}
 				required
 				minlength={LIMITS.messageMin}
 				maxlength={LIMITS.messageMax}
 				value={values.message}
-				aria-invalid={errors.message ? 'true' : undefined}
-				aria-describedby={errors.message ? errorId('message') : undefined}
-			></textarea>
-			{#if errors.message}<p id={errorId('message')} class={errorText}>{errors.message}</p>{/if}
+			/>
+			{#if errors.message}<p id={errorId('message')} class={errorClass}>{errors.message}</p>{/if}
 		</div>
 
 		<div class="col-span-full flex justify-end">
-			<button
+			<Button
 				type="submit"
 				disabled={pending}
-				class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-sm bg-brand px-6 text-[15px] leading-5 font-medium text-on-brand transition-colors duration-150 hover:bg-brand-hover disabled:cursor-progress disabled:opacity-70 sm:w-auto"
+				class="h-auto min-h-12 w-full rounded-sm px-6 text-[15px] leading-5 hover:bg-brand-hover disabled:cursor-progress disabled:opacity-70 sm:w-auto"
 			>
 				{pending ? 'Sending…' : 'Send message'}
-			</button>
+			</Button>
 		</div>
 	</form>
 {/if}

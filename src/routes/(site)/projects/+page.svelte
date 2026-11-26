@@ -141,7 +141,7 @@
 				{#each data.publications as paper (paper.id)}
 					<li>
 						<article
-							class="grid grid-cols-[56px_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 border-t border-line py-[22px] sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:gap-x-6"
+							class="grid grid-cols-[64px_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 border-t border-line py-[22px] sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:gap-x-6"
 						>
 							<span class="font-display text-2xl leading-7 font-semibold text-brand-text"
 								>{paper.year}</span
