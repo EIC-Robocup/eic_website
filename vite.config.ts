@@ -14,7 +14,9 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			// Singapore is the closest Vercel region to Bangkok. Put the Supabase project in
+			// Southeast Asia (Singapore) too, so database calls stay short.
+			adapter: adapter({ runtime: 'nodejs24.x', regions: ['sin1'] })
 		})
 	]
 });
