@@ -22,6 +22,13 @@
       "when": 1795722218677,
       "tag": "20261126194338_revoke_data_api_access",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795724791509,
+      "tag": "20261126202631_achievement_entrants",
+      "breakpoints": true
     }
   ]
 }

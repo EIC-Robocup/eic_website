@@ -345,6 +345,10 @@ insert into achievements (id, year, placement, competition, short_name, location
 	('e1c00006-0000-4000-8000-000000000014', 2006, '3rd', 'RoboCup Soccer', 'Soccer', null, 13)
 on conflict do nothing;
 
+-- Walkie 4 finished 6th of 24 teams in 2026.
+update achievements set entrants = 24
+where id = 'e1c00006-0000-4000-8000-000000000001' and entrants is null;
+
 -- ---------------------------------------------------------------------------
 -- Archive photos (About, "Pinned to the lab wall")
 -- ---------------------------------------------------------------------------

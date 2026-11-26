@@ -210,6 +210,8 @@ export const achievements = pgTable('achievements', {
 	year: integer('year').notNull(),
 	/** e.g. "6th", "1st", "Finalist". */
 	placement: text('placement').notNull(),
+	/** How many teams took part, e.g. 24 for "6th of 24". */
+	entrants: integer('entrants'),
 	/** Full name, e.g. "RoboCup@Home Open League". */
 	competition: text('competition').notNull(),
 	/** Short label on the timeline, e.g. "@Home". */
