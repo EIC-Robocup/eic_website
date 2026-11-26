@@ -8,16 +8,16 @@
 		<meta name="theme-color" content="#111111" />
 		<meta name="color-scheme" content="dark" />
 		<script>
-			// Motion on arrival (see src/lib/motion/reveal.ts): content may only be hidden for its
-			// entrance once this runs: never under reduced motion, on a data saver or a slow
-			// connection, or without JavaScript. If the app has not taken over within 2.5s, show
-			// everything (later pages still animate).
+			// Motion on arrival (see src/lib/motion/reveal.ts): never under reduced motion, on a data
+			// saver or a slow connection, or without JavaScript. Content in view on the first load is
+			// never hidden; `first-load` gives the hero a CSS-only entrance. If the app has not taken
+			// over within 2.5s, everything shows (later pages still animate).
 			(function () {
 				var root = document.documentElement;
 				var net = navigator.connection;
 				if (!window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 				if (net && (net.saveData || /(^|-)2g|3g/.test(net.effectiveType || ''))) return;
-				root.classList.add('motion');
+				root.classList.add('motion', 'first-load');
 				setTimeout(function () {
 					if (root.classList.contains('motion-ready')) return;
 					root.classList.remove('motion');

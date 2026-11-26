@@ -365,14 +365,15 @@
 	animation-duration: 150ms;
 }
 
+/* Swap them at once: two opposite fades leave the header half see-through mid-way. */
 ::view-transition-old(site-nav),
 ::view-transition-old(admin-sidebar) {
-	animation: 150ms linear both eic-fade-out;
+	display: none;
 }
 
 ::view-transition-new(site-nav),
 ::view-transition-new(admin-sidebar) {
-	animation: 150ms linear both eic-fade-in;
+	animation: none;
 }
 
 /* The phone menu (Nav.svelte, `site-menu`) fades out above the header when a link in it is followed. */
@@ -403,13 +404,13 @@
  * reveal module has marked the page. Print and other media always show everything.
  */
 @media screen {
-	/* Until the page is marked, keep it from flashing before its entrance (2.5s at most). */
-	html.motion:not(.motion-ready) #main {
-		opacity: 0;
-	}
-
-	html.motion #main {
-		transition: opacity 150ms var(--ease-out);
+	/*
+	 * Content the server sent is never held back for JavaScript. On the first page load the hero
+	 * rises in with CSS alone, from the first paint; what is in view when the reveal module starts
+	 * stays visible, and only content further down is revealed on scroll.
+	 */
+	html.motion.first-load #main > :first-child {
+		animation: eic-enter 420ms var(--ease-out) both;
 	}
 
 	html.motion [data-reveal]:not([data-revealed]) {

@@ -18,10 +18,11 @@
  *
  * Progressive enhancement: an inline script in app.html adds `motion` to <html> unless the
  * visitor prefers reduced motion; the CSS (layout.css) hides content only under `html.motion`.
- * Until this module has marked the page (`motion-ready`), `main` stays transparent, so content
- * never flashes before its entrance; if the module has not run within 2.5s the inline script
- * removes `motion` and everything shows (the module then turns motion back on for the next
- * pages only). Without JavaScript nothing is ever hidden.
+ * Content the server sent is never held back: on the first load, what is already in view stays
+ * visible (the hero gets a CSS-only entrance from the first paint, `html.first-load`) and only
+ * content further down waits for its reveal. If the module has not run within 2.5s the inline
+ * script removes `motion` (the module turns it back on for the next pages only). Without
+ * JavaScript nothing is ever hidden.
  *
  * Back and forward show the page at once. During a page transition, the element morphing from
  * the previous page (see view-transitions.ts) is shown at once too. Focus inside a hidden item
@@ -45,7 +46,8 @@ const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'META', 'NOSCR
 /** Nested blocks are walked like the top-level ones (People groups, the post article). */
 const BLOCK_TAGS = new Set(['SECTION', 'ARTICLE']);
 
-type Mode = 'animate' | 'instant';
+/** `initial`: the first scan of a fresh page load; whatever is already in view stays visible. */
+type Mode = 'animate' | 'instant' | 'initial';
 
 function transparent(style: CSSStyleDeclaration): boolean {
 	return (
@@ -86,6 +88,12 @@ function hasOwnText(el: Element): boolean {
 	return false;
 }
 
+/** Whether any part of the element is inside the window right now. */
+function inView(el: Element): boolean {
+	const r = el.getBoundingClientRect();
+	return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight;
+}
+
 export function createReveal(): Attachment<HTMLElement> {
 	/** Type of the navigation in progress, between onNavigate and afterNavigate. */
 	let arriving: string | null = null;
@@ -93,6 +101,8 @@ export function createReveal(): Attachment<HTMLElement> {
 
 	onNavigate((navigation) => {
 		arriving = navigation.type;
+		// The CSS-only entrance belongs to the first page load; later pages use the transition.
+		document.documentElement.classList.remove('first-load');
 	});
 
 	afterNavigate((navigation) => {
@@ -232,6 +242,7 @@ export function createReveal(): Attachment<HTMLElement> {
 				const instant =
 					mode === 'instant' ||
 					!el.getClientRects().length ||
+					(mode === 'initial' && inView(el)) ||
 					(morphing && el.querySelector('[data-vt-active]') !== null);
 				if (instant) {
 					show(el, 0, true);
@@ -279,25 +290,16 @@ export function createReveal(): Attachment<HTMLElement> {
 			el.classList.add('is-revealed');
 		}
 
-		/** Reveal a batch: items of the same section rise one after another. */
+		/** Reveal a batch: items that enter together rise one after another, in reading order. */
 		function showBatch(els: HTMLElement[]) {
-			const groups = new Map<Element, HTMLElement[]>();
-			for (const el of els) {
-				const group = el.closest('#main > *, section, article') ?? main;
-				const list = groups.get(group);
-				if (list) list.push(el);
-				else groups.set(group, [el]);
-			}
-			for (const list of groups.values()) {
-				list.sort((a, b) =>
-					a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-				);
-				const staggered = list.filter((el) => !el.dataset.reveal);
-				const step = staggered.length > 1 ? Math.min(STEP, MAX_STAGGER / (staggered.length - 1)) : 0;
-				let i = 0;
-				for (const el of list) {
-					show(el, el.dataset.reveal ? 0 : Math.round(i++ * step), false);
-				}
+			const list = [...els].sort((a, b) =>
+				a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+			);
+			const staggered = list.filter((el) => !el.dataset.reveal);
+			const step = staggered.length > 1 ? Math.min(STEP, MAX_STAGGER / (staggered.length - 1)) : 0;
+			let i = 0;
+			for (const el of list) {
+				show(el, el.dataset.reveal ? 0 : Math.round(i++ * step), false);
 			}
 		}
 
@@ -341,17 +343,23 @@ export function createReveal(): Attachment<HTMLElement> {
 		}
 
 		function onFocusIn(event: FocusEvent) {
-			const el = (event.target as Element | null)?.closest<HTMLElement>(
-				'[data-reveal]:not([data-revealed])'
-			);
-			if (el) show(el, 0, true);
+			const target = event.target as Element | null;
+			const hidden = target?.closest<HTMLElement>('[data-reveal]:not([data-revealed])');
+			if (hidden) show(hidden, 0, true);
+			// Already scheduled but still waiting on its stagger: show it now so the focus ring is seen.
+			const waiting = target?.closest<HTMLElement>('[data-revealed]:not([data-reveal-done])');
+			if (waiting) {
+				waiting.style.removeProperty('--reveal-delay');
+				waiting.style.removeProperty('will-change');
+				waiting.setAttribute('data-reveal-done', '');
+			}
 		}
 
 		const mo = new MutationObserver(() => {
 			if (!frame) frame = requestAnimationFrame(() => scan());
 		});
 
-		scan(late ? 'instant' : 'animate');
+		scan(late ? 'instant' : 'initial');
 		mo.observe(main, { childList: true, subtree: true });
 		main.addEventListener('focusin', onFocusIn);
 		window.addEventListener('scroll', onScroll, { passive: true });
