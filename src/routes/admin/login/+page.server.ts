@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/env';
-import { ADMIN_EMAILS, DEV_AUTH_EMAIL, SUPABASE_URL } from '$app/env/private';
+import { ADMIN_EMAILS, DEV_AUTH_EMAIL } from '$app/env/private';
 import { isInvited, normalizeEmail, safeNext } from '#lib/server/auth.ts';
 import { authConfigured } from '#lib/server/supabase.ts';
 import {
@@ -52,7 +52,7 @@ export const load: PageServerLoad = async ({ locals, url, setHeaders }) => {
 	// Only in `pnpm dev`: explain why the DEV_AUTH_EMAIL shortcut did not sign you in.
 	let devNotice: string | null = null;
 	if (dev && DEV_AUTH_EMAIL) {
-		devNotice = `DEV_AUTH_EMAIL is set to ${DEV_AUTH_EMAIL}, but that email is not an invited editor. Add it to ADMIN_EMAILS in .env (or to the editors table) and reload.`;
+		devNotice = `DEV_AUTH_EMAIL is set to ${DEV_AUTH_EMAIL}, but it did not sign you in: that email is not an invited editor, or the database is unreachable. Add it to ADMIN_EMAILS in .env, check DATABASE_URL, and reload.`;
 	}
 
 	return {
@@ -61,10 +61,8 @@ export const load: PageServerLoad = async ({ locals, url, setHeaders }) => {
 		error: loginErrorMessage(url.searchParams.get('error')),
 		dev,
 		devNotice,
-		/** Whether ADMIN_EMAILS is empty (a fresh install with nobody to let in). */
-		noBootstrap: dev && !ADMIN_EMAILS,
-		/** Supabase project host, shown in the setup notice in dev only. */
-		supabaseHost: dev && SUPABASE_URL ? new URL(SUPABASE_URL).host : null
+		/** In dev: ADMIN_EMAILS is empty, so nobody can sign in on a fresh database. */
+		noBootstrap: dev && !ADMIN_EMAILS
 	};
 };
 
