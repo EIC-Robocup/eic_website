@@ -1,7 +1,7 @@
 import { sequence, type Handle } from '@sveltejs/kit/hooks';
 
 import { dev } from '$app/env';
-import { DEV_AUTH_EMAIL } from '$app/env/private';
+import { DEV_AUTH_EMAIL, VERCEL_ENV } from '$app/env/private';
 import { findEditor } from '#lib/server/auth.js';
 import { createRequestClient } from '#lib/server/supabase.js';
 
@@ -95,6 +95,8 @@ const securityHeaders: Handle = async ({ event, resolve }) => {
 	response.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
 	response.headers.set('x-frame-options', 'SAMEORIGIN');
 	response.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+	// Preview deployments share content with production: keep them out of search engines.
+	if (VERCEL_ENV === 'preview') response.headers.set('x-robots-tag', 'noindex, nofollow');
 	return response;
 };
 

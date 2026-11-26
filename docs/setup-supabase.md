@@ -37,14 +37,16 @@ about 30 minutes. Do the [Vercel guide](./setup-vercel.md) after this one (or al
 
 ## 2. Collect keys and connection strings
 
-Click **Connect** in the project's top bar.
+Click **Connect** in the project's top bar. If you connect Supabase to Vercel with the integration
+(Vercel guide, step 2), the URL, keys and pooler URI are copied into Vercel for you; you still
+need the session pooler URI for running scripts from your laptop.
 
 | What | Where | Used as |
 | --- | --- | --- |
 | Project URL `https://<ref>.supabase.co` | Connect dialog, or Project Settings → Data API | `SUPABASE_URL` |
 | Publishable key `sb_publishable_...` | Project Settings → **API Keys** → "Publishable and secret API keys" (click **Create new API keys** if empty) | `SUPABASE_PUBLISHABLE_KEY` |
 | Secret key `sb_secret_...` | same page, **Secret keys** → reveal → copy | `SUPABASE_SECRET_KEY` (server only, never share it) |
-| Transaction pooler URI (port **6543**) | Connect → **Connection String** → Transaction pooler | `DATABASE_URL` on Vercel |
+| Transaction pooler URI (port **6543**) | Connect → **Connection String** → Transaction pooler | `DATABASE_URL` on Vercel, only if you don't use the Supabase ↔ Vercel integration (it sets `POSTGRES_URL` for you) |
 | Session pooler URI (port **5432**) | Connect → **Connection String** → Session pooler | for `pnpm db:seed`, `pnpm db:migrate` and Drizzle Studio from your laptop |
 
 Replace `[YOUR-PASSWORD]` in the URIs with the database password. Pooler URIs look like

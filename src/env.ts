@@ -47,6 +47,11 @@ export const variables = defineEnvVars({
 			'Comma separated emails that may always sign in to the admin panel and become owners on first sign in.',
 		schema: optional
 	},
+	VERCEL_ENV: {
+		description: 'Set by Vercel: production, preview or development. Unset locally.',
+		static: true,
+		schema: optional
+	},
 	DEV_AUTH_EMAIL: {
 		description:
 			'Local development only: treat every request as signed in with this email. Ignored in production builds.',
