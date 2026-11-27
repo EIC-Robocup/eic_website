@@ -701,7 +701,7 @@
 	background: none;
 }
 .post-body .mermaid-details > summary {
-	min-height: 40px;
+	min-height: 44px;
 	color: var(--eic-ink-muted);
 	font-family: var(--font-mono);
 	font-size: 12px;

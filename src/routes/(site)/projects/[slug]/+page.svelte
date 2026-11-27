@@ -375,7 +375,7 @@
 				</h2>
 				<a
 					href="/blog"
-					class="text-[15px] font-medium whitespace-nowrap text-brand-text no-underline transition-colors duration-150 hover:text-ink"
+					class="-my-2.5 inline-flex min-h-11 items-center text-[15px] font-medium whitespace-nowrap text-brand-text no-underline transition-colors duration-150 hover:text-ink"
 					>All posts →</a
 				>
 			</div>
