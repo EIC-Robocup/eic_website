@@ -10,11 +10,10 @@
 	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
 </script>
 
+<!-- EIC: the current page is plain text marked aria-current, not a disabled "link". -->
 <span
 	bind:this={ref}
 	data-slot="breadcrumb-page"
-	role="link"
-	aria-disabled="true"
 	aria-current="page"
 	class={cn("text-foreground font-normal", className)}
 	{...restProps}
