@@ -27,7 +27,7 @@ importers:
         specifier: ^4.1.1
         version: 4.1.1
       sanitize-html:
-        specifier: ^2.17.5
+        specifier: 2.17.5
         version: 2.17.5
       shiki:
         specifier: 4.6.0

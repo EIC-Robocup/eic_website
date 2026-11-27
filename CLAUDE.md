@@ -20,9 +20,11 @@ pnpm images:resize  # smaller copies of new photos in static/images (--force, --
 
 Vercel's function runtime cannot `require()` an ES module, which Node 24 otherwise allows. A
 CommonJS package that requires an ESM-only dependency works locally and crashes on Vercel with
-`ERR_REQUIRE_ESM` (this happened with `sanitize-html` 2.18 + `htmlparser2` 12, so `sanitize-html` is
-pinned to 2.17.5). After adding a server dependency, run `pnpm build && pnpm preview:vercel` and
-load the pages that use it.
+`ERR_REQUIRE_ESM` (this happened with `sanitize-html` 2.18 + `htmlparser2` 12: every version
+after 2.17.5 needs htmlparser2 12). So `sanitize-html` is pinned exactly to `2.17.5` in
+`package.json`, with no caret. Don't bump it (not with `pnpm update --latest`, not in a
+Dependabot PR) unless `pnpm build && pnpm preview:vercel` still serves a blog post. After adding
+a server dependency, run `pnpm build && pnpm preview:vercel` and load the pages that use it.
 
 ## SvelteKit 3: what differs from Kit 2
 
