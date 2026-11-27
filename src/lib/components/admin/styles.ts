@@ -11,7 +11,7 @@
  */
 
 export const inputClass =
-	'h-11 rounded-sm border-line-strong bg-surface-100 px-3 shadow-none dark:bg-surface-100 placeholder:text-ink-muted/70';
+	'h-11 rounded-sm border-line-strong bg-surface-100 px-3 shadow-none dark:bg-surface-100 placeholder:text-ink-muted';
 
 /** Big title input, as on the post editor (Space Grotesk 24px, 56px high). */
 export const titleInputClass = `${inputClass} h-14 font-display text-2xl font-semibold tracking-[-0.01em] md:text-2xl`;
@@ -20,7 +20,7 @@ export const titleInputClass = `${inputClass} h-14 font-display text-2xl font-se
 export const monoInputClass = `${inputClass} font-mono text-[13px] md:text-[13px]`;
 
 export const textareaClass =
-	'min-h-24 rounded-sm border-line-strong bg-surface-100 px-3 py-2.5 leading-6 shadow-none dark:bg-surface-100 placeholder:text-ink-muted/70';
+	'min-h-24 rounded-sm border-line-strong bg-surface-100 px-3 py-2.5 leading-6 shadow-none dark:bg-surface-100 placeholder:text-ink-muted';
 
 export const selectTriggerClass =
 	'w-full rounded-sm border-line-strong bg-surface-100 px-3 shadow-none data-[size=default]:h-11 dark:bg-surface-100 dark:hover:bg-surface-300';

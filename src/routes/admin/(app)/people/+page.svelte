@@ -231,7 +231,7 @@
 			{#each pills as pill (pill.value)}
 				<ToggleGroup.Item value={pill.value} class={pillClass}>
 					{pill.label}
-					<span class="font-mono text-[11px] opacity-60">{counts[pill.value] ?? 0}</span>
+					<span class="font-mono text-[11px]">{counts[pill.value] ?? 0}</span>
 				</ToggleGroup.Item>
 			{/each}
 		</ToggleGroup.Root>

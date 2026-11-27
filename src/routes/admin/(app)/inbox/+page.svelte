@@ -146,7 +146,7 @@
 				class="h-9 flex-none rounded-sm px-3.5 text-sm font-medium text-ink-muted hover:text-ink data-active:border-transparent data-active:bg-surface-300 data-active:text-ink data-active:shadow-none dark:text-ink-muted dark:data-active:border-transparent dark:data-active:bg-surface-300"
 			>
 				{item.label}
-				<span class="font-mono text-xs opacity-60">{counts[item.value]}</span>
+				<span class="font-mono text-xs">{counts[item.value]}</span>
 			</Tabs.Trigger>
 		{/each}
 	</Tabs.List>

@@ -138,7 +138,7 @@
 				aria-label="{field.label} link"
 				aria-invalid={hrefError ? 'true' : undefined}
 				aria-describedby={hrefError ? `${uid}-href-error` : undefined}
-				class="h-full px-2 font-mono text-[13px] outline-none! placeholder:text-ink-muted/70 md:text-[13px]"
+				class="h-full px-2 font-mono text-[13px] outline-none! placeholder:text-ink-muted md:text-[13px]"
 			/>
 		</InputGroup.Root>
 		{#if hrefError}

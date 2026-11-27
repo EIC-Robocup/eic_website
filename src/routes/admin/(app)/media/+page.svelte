@@ -208,7 +208,7 @@
 					class="h-9 rounded-sm px-3.5 text-sm font-medium text-ink-muted hover:bg-transparent hover:text-ink data-[state=on]:bg-surface-300 data-[state=on]:text-ink"
 				>
 					{item.label}
-					<span class="font-mono text-xs opacity-60">{counts[item.value]}</span>
+					<span class="font-mono text-xs">{counts[item.value]}</span>
 				</ToggleGroup.Item>
 			{/each}
 		</ToggleGroup.Root>

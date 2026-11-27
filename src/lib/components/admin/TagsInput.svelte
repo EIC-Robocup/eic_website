@@ -143,7 +143,7 @@
 		bind:value={draft}
 		{id}
 		type="text"
-		class="h-8 min-w-[10ch] flex-1 border-0 bg-transparent px-1 text-base text-ink outline-none placeholder:text-ink-muted/70 md:text-sm"
+		class="h-8 min-w-[10ch] flex-1 border-0 bg-transparent px-1 text-base text-ink outline-none placeholder:text-ink-muted md:text-sm"
 		placeholder={full ? `Up to ${max} tags` : placeholder}
 		{disabled}
 		maxlength={maxLength * 4}
