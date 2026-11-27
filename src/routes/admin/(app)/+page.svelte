@@ -29,17 +29,22 @@
 		if (!c) return [];
 		const years = c.achievements.firstYear && c.achievements.lastYear;
 		return [
-			{ label: 'Projects', value: c.projects.total, note: `${c.projects.ongoing} ongoing`, href: '/admin/projects' },
+			{
+				label: 'Projects',
+				value: c.projects.total,
+				note: `${c.projects.published} on the site · ${c.projects.ongoing} ongoing`,
+				href: '/admin/projects'
+			},
 			{
 				label: 'Posts',
 				value: c.posts.total,
-				note: `${c.posts.published} published · ${plural(c.posts.drafts, 'draft')}`,
+				note: `${c.posts.published} published · ${c.posts.scheduled ? `${c.posts.scheduled} scheduled · ` : ''}${plural(c.posts.drafts, 'draft')}`,
 				href: '/admin/posts'
 			},
 			{
 				label: 'People',
 				value: c.people.total,
-				note: `${plural(c.people.teams, 'team')} · ${plural(c.people.advisors, 'advisor')}`,
+				note: `${c.people.onSite} on the site · ${plural(c.people.teams, 'team')} · ${plural(c.people.advisors, 'advisor')}`,
 				href: '/admin/people'
 			},
 			{
