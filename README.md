@@ -119,8 +119,8 @@ hook in `src/hooks.server.ts`). Vercel's CDN serves a copy for 60 seconds withou
 site's function or any query, then may serve it once more while it fetches a new one (for up
 to 10 minutes). So editors' changes show within about a minute; a new deployment starts with
 an empty cache. Only a GET or HEAD answered 200 on a `(site)` route, with no `set-cookie`, is
-cached. Nothing else is: the admin panel is `private, no-store`, and Vercel's CDN doesn't
-keep responses without `s-maxage` (sign in, `/auth/*`, `/api/health`).
+cached. Nothing else is: the admin panel and sign in are `private, no-store`, and Vercel's CDN
+doesn't keep responses without `s-maxage` (`/auth/*`, `/api/health`).
 
 Because of this, **no `(site)` load may read `locals.user`, `locals.editor` or cookies**: the
 CDN would hand one visitor's page to everyone.
