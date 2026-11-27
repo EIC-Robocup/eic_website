@@ -166,7 +166,7 @@
 		Drop files anywhere on this page, paste them, or
 		<button
 			type="button"
-			class="inline-flex min-h-6 items-center font-medium text-brand-text underline-offset-4 hover:text-ink hover:underline"
+			class="relative inline-flex min-h-6 items-center font-medium text-brand-text underline-offset-4 before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-[''] hover:text-ink hover:underline"
 			onclick={() => fileInput?.click()}>choose files</button
 		>.
 	</p>
@@ -174,7 +174,7 @@
 		Images up to 10 MB (resized to 2400px and saved as WebP), PDFs up to 20 MB, MP4 or WebM videos up to 50 MB,
 		GLB or glTF models up to 25 MB. No SVG.
 	</p>
-	<label class="flex min-h-8 cursor-pointer items-center gap-2 text-xs text-ink-muted">
+	<label class="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-ink-muted">
 		<Checkbox bind:checked={keepOriginal} aria-describedby="keep-original-hint" />
 		<span>Keep original quality</span>
 		<span id="keep-original-hint" class="sr-only">Uploads images as they are, without resizing or converting to WebP.</span>

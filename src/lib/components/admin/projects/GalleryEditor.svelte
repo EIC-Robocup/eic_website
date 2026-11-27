@@ -411,20 +411,21 @@
 						{:else}
 							<div
 								data-empty-slot={index}
-								class="drop-zone flex size-full flex-col items-center justify-center gap-1.5 p-3 text-center text-xs text-ink-muted"
+								class="drop-zone relative flex size-full flex-col items-center justify-center gap-1.5 p-3 text-center text-xs text-ink-muted"
 							>
 								<span class="line-clamp-2 font-medium text-ink">{item.caption || 'Empty slot'}</span>
 								<span>
+									<!-- The hit area covers the whole slot. -->
 									<button
 										type="button"
-										class="inline-flex min-h-6 items-center text-brand-text underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+										class="inline-flex min-h-6 items-center text-brand-text underline-offset-4 before:absolute before:inset-0 before:rounded-sm before:content-[''] hover:text-ink hover:underline disabled:opacity-50"
 										{disabled}
 										onclick={() => pick(item)}>Upload</button
 									> or drop a photo
 								</span>
 							</div>
 						{/if}
-						<span class="text-label absolute top-2 left-2 rounded-xs bg-surface-100/90 px-1.5 text-[11px] text-brand-text" aria-hidden="true">
+						<span class="text-label pointer-events-none absolute top-2 left-2 rounded-xs bg-surface-100/90 px-1.5 text-[11px] text-brand-text" aria-hidden="true">
 							{pad(index + 1)}
 						</span>
 					</div>
@@ -518,22 +519,23 @@
 
 	<div
 		class={[
-			'drop-zone flex flex-col items-center justify-center gap-2 px-4 py-5 text-center text-[13px] text-ink-muted transition-colors',
+			'drop-zone relative flex flex-col items-center justify-center gap-2 px-4 py-5 text-center text-[13px] text-ink-muted transition-colors',
 			dragging && 'border-ink bg-surface-300/40'
 		]}
 	>
 		<ImagePlusIcon class="size-6 text-line-strong" strokeWidth={1.5} aria-hidden="true" />
 		<span>
+			<!-- The hit area covers the whole zone; the buttons below sit above it. -->
 			<button
 				type="button"
 				data-add-photos
-				class="inline-flex min-h-6 items-center font-medium text-brand-text underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+				class="inline-flex min-h-6 items-center font-medium text-brand-text underline-offset-4 before:absolute before:inset-0 before:rounded-sm before:content-[''] hover:text-ink hover:underline disabled:opacity-50"
 				disabled={disabled || !room}
 				onclick={() => pick(null)}>Add photos</button
 			>, drop them here or paste them. Several at once is fine.
 		</span>
 		<span class={hintClass}>PNG, JPEG, WebP, GIF or AVIF. Photos are resized to 2400px and saved as WebP.</span>
-		<div class="flex flex-wrap justify-center gap-2 pt-1">
+		<div class="relative z-[1] flex flex-wrap justify-center gap-2 pt-1">
 			{#if !linksOpen}
 				<AdminButton variant="outline" size="sm" disabled={disabled || !room} onclick={openLinks}>Paste links</AdminButton>
 			{/if}

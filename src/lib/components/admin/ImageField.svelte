@@ -252,7 +252,7 @@
 {#snippet linkButton(text: string)}
 	<button
 		type="button"
-		class="inline-flex min-h-6 items-center text-brand-text underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+		class="relative z-[1] inline-flex min-h-6 items-center text-brand-text underline-offset-4 before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-[''] hover:text-ink hover:underline disabled:opacity-50"
 		{disabled}
 		onclick={openLink}>{text}</button
 	>
@@ -361,7 +361,7 @@
 			{:else}
 				<div
 					class={[
-						'drop-zone flex size-full flex-col items-center justify-center text-center text-ink-muted transition-colors',
+						'drop-zone relative flex size-full flex-col items-center justify-center text-center text-ink-muted transition-colors',
 						compact ? 'gap-1 p-2 text-xs' : 'gap-2 p-4 text-[13px]',
 						dragging && 'border-ink bg-surface-300/40',
 						error && 'border-brand-text'
@@ -371,9 +371,10 @@
 						<ImageIcon class="size-6 text-line-strong" strokeWidth={1.5} aria-hidden="true" />
 					{/if}
 					<span>
+						<!-- Its hit area covers the whole zone, so a tap anywhere opens the file picker. -->
 						<button
 							type="button"
-							class="inline-flex min-h-6 items-center text-brand-text underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+							class="inline-flex min-h-6 items-center text-brand-text underline-offset-4 before:absolute before:inset-0 before:rounded-sm before:content-[''] hover:text-ink hover:underline disabled:opacity-50"
 							disabled={disabled || uploading}
 							onclick={pick}>Upload</button
 						>
@@ -405,7 +406,7 @@
 	{/if}
 
 	{#if qualityOption && variant === 'drop'}
-		<label class="flex min-h-8 w-fit cursor-pointer items-center gap-2 text-xs leading-[18px] text-ink-muted">
+		<label class="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-xs leading-[18px] text-ink-muted">
 			<Checkbox bind:checked={keepOriginal} disabled={disabled || uploading} aria-describedby="{baseId}-quality-hint" />
 			<span>Keep original quality</span>
 			<span id="{baseId}-quality-hint" class="sr-only">Uploads the file as it is, without resizing or converting to WebP.</span>
