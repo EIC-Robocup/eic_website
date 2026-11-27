@@ -7,8 +7,9 @@ const optional = (value: string | undefined) => (value?.trim() ? value.trim() : 
  * Environment variables. Values come from `.env` locally and from the Vercel project
  * settings in production. See docs/setup-vercel.md for where each one comes from.
  *
- * Everything here is private (server only). The browser never talks to Supabase
- * directly: sign in, data and uploads all go through the SvelteKit server.
+ * Everything here is private (server only). Sign in and data go through the SvelteKit
+ * server. The browser talks to Supabase Storage only to PUT an upload to a signed URL the
+ * server creates (/admin/api/upload) and to load public files from the media bucket.
  */
 export const variables = defineEnvVars({
 	DATABASE_URL: {
@@ -21,6 +22,8 @@ export const variables = defineEnvVars({
 			'Set by the Supabase integration on Vercel. Used when DATABASE_URL is not set (e.g. on preview branches).',
 		schema: optional
 	},
+	// Also read by vite.config.ts at build time: Vercel Image Optimization may resize only
+	// this project's media bucket, and a build without it serves media photos as they are.
 	SUPABASE_URL: {
 		description: 'Supabase project URL, e.g. https://abcd1234.supabase.co',
 		schema: optional
