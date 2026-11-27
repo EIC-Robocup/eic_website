@@ -140,7 +140,8 @@ per /64.
 | Contact form | 5 per network per 10 min, 20 per email address per day, 60 for the whole site per hour (then the form points to the club's email). The form must be sent between 3 seconds and 24 hours after the page was rendered | `src/routes/(site)/about/` |
 
 Contact messages keep a hashed sender address for a day, for the limit. The daily
-`/api/health` cron deletes old counters and clears those hashes.
+`/api/health` cron deletes old counters and clears those hashes. Only the cron's call does
+that tidy up (it carries `CRON_SECRET` when that is set); other calls only check the database.
 
 ### Content-Security-Policy
 

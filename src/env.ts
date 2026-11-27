@@ -50,6 +50,11 @@ export const variables = defineEnvVars({
 			'Comma separated emails that may always sign in to the admin panel and become owners on first sign in.',
 		schema: optional
 	},
+	CRON_SECRET: {
+		description:
+			'Optional. Vercel sends it as a Bearer token with each cron call, so only the cron can run the daily tidy up in /api/health.',
+		schema: optional
+	},
 	VERCEL_ENV: {
 		description: 'Set by Vercel: production, preview or development. Unset locally.',
 		static: true,

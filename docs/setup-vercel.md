@@ -63,6 +63,7 @@ Then add the one variable the integration doesn't know about:
 | Name | Value | Environments |
 | --- | --- | --- |
 | `ADMIN_EMAILS` | Your email (comma separated for several people). These people can always sign in and become owners. | Production, Preview |
+| `CRON_SECRET` | Optional but recommended. A random string of 16 or more characters, for example from `openssl rand -hex 24`. Vercel sends it with each cron call, so only the cron can run the daily tidy up (step 7). Mark it **Sensitive**. | Production |
 
 Do **not** add `DATABASE_URL` on Vercel when the integration is connected: the site prefers
 `DATABASE_URL` over `POSTGRES_URL`, so it would point every preview at the production database.
@@ -164,8 +165,10 @@ them. The custom domain is public. Change this in **Settings → Deployment Prot
 `vercel.json` schedules `GET /api/health` once a day (03:17 UTC). The endpoint runs one tiny
 query, which keeps a Free plan Supabase project from pausing after a quiet week. The same run
 tidies up: it deletes rate limit counters older than a day and removes the hashed sender
-address from contact messages older than a day. It shows up under **Settings → Cron Jobs**
-after the first production deployment. Cron jobs only run on production.
+address from contact messages older than a day. Anyone can open `/api/health`, but only the
+cron's call tidies up: with `CRON_SECRET` set (step 2), the call must carry it, and without it
+the site goes by the cron's user agent. It shows up under **Settings → Cron Jobs** after the
+first production deployment. Cron jobs only run on production.
 
 ## 8. Local environment from Vercel (optional)
 
