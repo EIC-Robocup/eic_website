@@ -1,7 +1,7 @@
 <!--
 	Person card from the People page: a dashed reticle avatar (photo or initials), the
-	name and the role (in brand-text for leads). Links to `profileUrl` when there is one;
-	otherwise it is a plain figure, not a link.
+	name and the role (in brand-text for leads, unless `highlightLead` is off). Links to
+	`profileUrl` when there is one; otherwise it is a plain figure, not a link.
 	size 'md' is the People grid (112px reticle); 'sm' is the home page strip (96px).
 -->
 <script lang="ts" module>
@@ -25,10 +25,15 @@
 		size?: 'md' | 'sm';
 		/** Override the link (e.g. the home strip links everyone to /people). */
 		href?: string | null;
+		/**
+		 * Show a lead's role in red (default). The home strip turns it off: one red moment per
+		 * region, and its roles are all ink-muted in the Main artboard.
+		 */
+		highlightLead?: boolean;
 		class?: string;
 	};
 
-	let { person, size = 'md', href, class: className }: Props = $props();
+	let { person, size = 'md', href, highlightLead = true, class: className }: Props = $props();
 
 	const link = $derived(href ?? person.profileUrl ?? null);
 	const external = $derived(isExternal(link));
@@ -77,7 +82,7 @@
 		>
 		{#if role}
 			<span
-				class={cn('text-[13px] leading-5', person.isLead ? 'text-brand-text' : 'text-ink-muted')}
+				class={cn('text-[13px] leading-5', person.isLead && highlightLead ? 'text-brand-text' : 'text-ink-muted')}
 				>{role}</span
 			>
 		{/if}

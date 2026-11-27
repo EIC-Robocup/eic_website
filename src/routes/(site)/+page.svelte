@@ -197,6 +197,7 @@
 					label="{featured.category === 'software' ? 'Screenshot' : 'Photo'} · {featured.title}"
 					aspect="4 / 3"
 					class="min-w-0 flex-[1_1_560px]"
+					sizes="(min-width: 1264px) 720px, (min-width: 944px) calc(50vw + 88px), 100vw"
 				/>
 				<div
 					class="flex min-w-0 flex-[1_1_320px] flex-col justify-between gap-7 border-t border-line p-5 sm:p-9 @min-[880px]:border-t-0 @min-[880px]:border-l"
@@ -303,7 +304,7 @@
 		>
 			{#each data.people as person (person.id)}
 				<li class="min-w-0 break-words">
-					<PersonCard {person} size="sm" href="/people" />
+					<PersonCard {person} size="sm" href="/people" highlightLead={false} />
 				</li>
 			{/each}
 		</ul>
