@@ -1,0 +1,74 @@
+/**
+ * Math with KaTeX, rendered on the server: `$inline$`, `$$display$$` (inline or on their own
+ * lines) and ```math fences. Output is MathML plus KaTeX's HTML; the page loads the KaTeX
+ * stylesheet only for posts that have math (PostBody does it).
+ *
+ * Dollar rules, so prices are not math: "$5 and $10" stays text. An inline formula needs no
+ * space after the opening `$`, no space before the closing `$`, and no digit right after it.
+ * Write `\$` for a literal dollar sign.
+ */
+import katex from 'katex';
+import type { TokenizerAndRendererExtension, Tokens } from 'marked';
+import type { RenderContext } from './context.ts';
+import { mathBlockSyntax, mathInlineSyntax } from './math-syntax.ts';
+import { escapeHtml } from './util.ts';
+
+/** Longest formula we render (KaTeX also caps macro expansion). */
+const MAX_TEX = 4000;
+
+/** Render TeX to KaTeX HTML+MathML. Never throws: errors come back in KaTeX's error style. */
+export function renderTex(tex: string, display: boolean): string {
+	const source = tex.length > MAX_TEX ? tex.slice(0, MAX_TEX) : tex;
+	try {
+		return katex.renderToString(source, {
+			displayMode: display,
+			output: 'htmlAndMathml',
+			throwOnError: false,
+			errorColor: '#FF6A6E',
+			// trust: false keeps \href, \url, \includegraphics and \html* switched off.
+			trust: false,
+			strict: 'ignore',
+			maxSize: 20,
+			maxExpand: 500
+		});
+	} catch {
+		return `<span class="katex-error">${escapeHtml(source)}</span>`;
+	}
+}
+
+/** Display math wrapper: scrolls sideways on phones instead of overflowing the page. */
+function displayBlock(ctx: RenderContext, tex: string): string {
+	ctx.features.math = true;
+	// Display formulas are left out of plain text (excerpts, meta descriptions).
+	if (ctx.mode === 'text') return '';
+	const html = `<div class="math-display" tabindex="0" role="group" aria-label="Equation">${renderTex(tex, true)}</div>`;
+	return ctx.fragment('math', html, true);
+}
+
+export function mathExtensions(ctx: RenderContext): TokenizerAndRendererExtension[] {
+	return [
+		{
+			...mathBlockSyntax,
+			renderer(token) {
+				return displayBlock(ctx, (token as Tokens.Generic).text as string);
+			}
+		},
+		{
+			...mathInlineSyntax,
+			renderer(token) {
+				const { text, display } = token as Tokens.Generic & { text: string; display: boolean };
+				ctx.features.math = true;
+				if (ctx.mode === 'text') return escapeHtml(text);
+				const html = display
+					? `<span class="math-display math-display-inline">${renderTex(text, true)}</span>`
+					: `<span class="math-inline">${renderTex(text, false)}</span>`;
+				return ctx.fragment('math', html, false);
+			}
+		}
+	];
+}
+
+/** For ```math fences (called by the code renderer). */
+export function renderMathFence(ctx: RenderContext, tex: string): string {
+	return displayBlock(ctx, tex.trim());
+}

@@ -1,2 +1,473 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+
+/* Fonts are self-hosted through Fontsource, so the site makes no third-party font requests. */
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/space-grotesk/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+@import '@fontsource/ibm-plex-sans-thai/thai-400.css';
+@import '@fontsource/ibm-plex-sans-thai/thai-500.css';
+@import '@fontsource/ibm-plex-sans-thai/thai-600.css';
+@import '@fontsource/caveat/latin-600.css';
+
 @plugin '@tailwindcss/typography';
+
+/*
+ * EIC Chula is dark only. There is no light theme, so the shadcn-svelte variables
+ * are set once on :root and point at the EIC Chula design tokens below.
+ */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	color-scheme: dark;
+
+	/* EIC Chula design tokens (see the design system's tokens.json) */
+	--eic-surface-000: #0b0b0b;
+	--eic-surface-100: #111111;
+	--eic-surface-200: #1a1a1a;
+	--eic-surface-300: #232323;
+	--eic-ink: #f3f2ee;
+	--eic-ink-muted: #a3a09a;
+	--eic-ink-on-light: #111111;
+	--eic-line: #2e2e2e;
+	--eic-line-strong: #75726b;
+	--eic-brand: #d7262c;
+	--eic-brand-hover: #b81c22;
+	--eic-on-brand: #ffffff;
+	--eic-brand-text: #ff6a6e;
+	--eic-chula-pink: #e5679a;
+	--eic-success: #55c98f;
+	--eic-focus: #f3f2ee;
+	--eic-draft-grid: rgba(243, 242, 238, 0.055);
+	--eic-draft-grid-fine: rgba(243, 242, 238, 0.025);
+	--eic-construction: #6a6862;
+
+	/* shadcn-svelte theme, mapped onto the tokens */
+	--background: var(--eic-surface-100);
+	--foreground: var(--eic-ink);
+	--card: var(--eic-surface-200);
+	--card-foreground: var(--eic-ink);
+	--popover: var(--eic-surface-200);
+	--popover-foreground: var(--eic-ink);
+	--primary: var(--eic-brand);
+	--primary-foreground: var(--eic-on-brand);
+	--secondary: var(--eic-surface-300);
+	--secondary-foreground: var(--eic-ink);
+	--muted: var(--eic-surface-300);
+	--muted-foreground: var(--eic-ink-muted);
+	--accent: var(--eic-surface-300);
+	--accent-foreground: var(--eic-ink);
+	--destructive: var(--eic-brand-text);
+	--border: var(--eic-line);
+	--input: var(--eic-line-strong);
+	--ring: var(--eic-focus);
+	--chart-1: var(--eic-brand);
+	--chart-2: var(--eic-ink);
+	--chart-3: var(--eic-ink-muted);
+	--chart-4: var(--eic-success);
+	--chart-5: var(--eic-chula-pink);
+	/* 10px: rounded-lg = cards and photos, rounded-sm = 6px controls, rounded-xs = 2px tags */
+	--radius: 0.625rem;
+	--sidebar: var(--eic-surface-000);
+	--sidebar-foreground: var(--eic-ink);
+	--sidebar-primary: var(--eic-brand);
+	--sidebar-primary-foreground: var(--eic-on-brand);
+	--sidebar-accent: var(--eic-surface-200);
+	--sidebar-accent-foreground: var(--eic-ink);
+	--sidebar-border: var(--eic-line);
+	--sidebar-ring: var(--eic-focus);
+}
+
+@theme inline {
+	--font-sans: 'Inter Variable', 'IBM Plex Sans Thai', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-heading: 'Space Grotesk Variable', 'IBM Plex Sans Thai', system-ui, sans-serif;
+	--font-display: 'Space Grotesk Variable', 'IBM Plex Sans Thai', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+	--font-hand: 'Caveat', 'Comic Sans MS', cursive;
+
+	/* EIC Chula colour utilities: bg-surface-200, text-ink-muted, border-line, text-brand-text ... */
+	--color-surface-000: var(--eic-surface-000);
+	--color-surface-100: var(--eic-surface-100);
+	--color-surface-200: var(--eic-surface-200);
+	--color-surface-300: var(--eic-surface-300);
+	--color-ink: var(--eic-ink);
+	--color-ink-muted: var(--eic-ink-muted);
+	--color-ink-on-light: var(--eic-ink-on-light);
+	--color-line: var(--eic-line);
+	--color-line-strong: var(--eic-line-strong);
+	--color-brand: var(--eic-brand);
+	--color-brand-hover: var(--eic-brand-hover);
+	--color-on-brand: var(--eic-on-brand);
+	--color-brand-text: var(--eic-brand-text);
+	--color-chula-pink: var(--eic-chula-pink);
+	--color-success: var(--eic-success);
+	--color-focus: var(--eic-focus);
+	--color-construction: var(--eic-construction);
+
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+
+	/* Layout widths */
+	--container-site: 1200px;
+	--container-text: 720px;
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		@apply bg-background font-sans text-foreground antialiased;
+		/*
+		 * Keep whatever the browser scrolls to (a focused control, a #link target) clear of the
+		 * sticky site header: 65px tall below 768px, 73px from 768px up, plus room for the 2px
+		 * focus ring and its 2px offset. Below 768px this also clears the admin's 57px top bar.
+		 */
+		scroll-padding-top: 72px;
+		@media (width >= 48rem) {
+			scroll-padding-top: 80px;
+		}
+	}
+	body {
+		@apply min-h-dvh bg-background text-foreground;
+	}
+	:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+		outline: 2px solid var(--eic-focus);
+		outline-offset: 2px;
+	}
+	::selection {
+		background: var(--eic-brand);
+		color: var(--eic-on-brand);
+	}
+}
+
+/* ---------- Type styles from the design system ---------- */
+
+/* Mono eyebrow / tag / year label: 12/16, 500, 0.08em, uppercase */
+@utility text-label {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+/* Mono spec text: 13/20 */
+@utility text-spec {
+	font-family: var(--font-mono);
+	font-size: 13px;
+	line-height: 20px;
+}
+
+/* Space Grotesk heading voice */
+@utility font-display-tight {
+	font-family: var(--font-display);
+	font-weight: 600;
+	letter-spacing: -0.02em;
+}
+
+/* ---------- Layout ---------- */
+
+/* The 1200px content column with 32px side gutters (16px on phones) */
+@utility site-container {
+	width: 100%;
+	max-width: calc(var(--container-site) + 64px);
+	margin-inline: auto;
+	padding-inline: 16px;
+	@media (width >= 40rem) {
+		padding-inline: 32px;
+	}
+}
+
+/* ---------- Drafting details (hero bands only) ---------- */
+
+/* Graph paper: major lines every 120px over minor lines every 24px */
+@utility bg-graph-paper {
+	background-color: var(--eic-surface-100);
+	background-image:
+		linear-gradient(var(--eic-draft-grid) 1px, transparent 1px),
+		linear-gradient(90deg, var(--eic-draft-grid) 1px, transparent 1px),
+		linear-gradient(var(--eic-draft-grid-fine) 1px, transparent 1px),
+		linear-gradient(90deg, var(--eic-draft-grid-fine) 1px, transparent 1px);
+	background-size:
+		120px 120px,
+		120px 120px,
+		24px 24px,
+		24px 24px;
+}
+
+/* Ruler strip along the bottom edge of a hero */
+@utility ruler-strip {
+	height: 22px;
+	border-top: 1px solid var(--eic-line);
+	background-image:
+		repeating-linear-gradient(90deg, rgba(243, 242, 238, 0.5) 0 1px, transparent 1px 120px),
+		repeating-linear-gradient(90deg, rgba(243, 242, 238, 0.3) 0 1px, transparent 1px 24px),
+		repeating-linear-gradient(90deg, rgba(243, 242, 238, 0.16) 0 1px, transparent 1px 6px);
+	background-size:
+		100% 16px,
+		100% 10px,
+		100% 5px;
+	background-repeat: no-repeat;
+}
+
+/* Crop marks in the four corners of an image slot */
+@utility crop-marks {
+	background-image:
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong)),
+		linear-gradient(var(--eic-line-strong), var(--eic-line-strong));
+	background-repeat: no-repeat;
+	background-size:
+		14px 1px,
+		1px 14px,
+		14px 1px,
+		1px 14px,
+		14px 1px,
+		1px 14px,
+		14px 1px,
+		1px 14px;
+	background-position:
+		left 10px top 10px,
+		left 10px top 10px,
+		right 10px top 10px,
+		right 10px top 10px,
+		left 10px bottom 10px,
+		left 10px bottom 10px,
+		right 10px bottom 10px,
+		right 10px bottom 10px;
+}
+
+/* Dashed drop zone for uploads in the admin panel */
+@utility drop-zone {
+	border: 1px dashed var(--eic-line-strong);
+	border-radius: var(--radius-sm);
+}
+
+/* ---------- Motion ---------- */
+
+/*
+ * Quiet, per the brand book: 150ms colour changes on hover, 240ms fade and 8px rise as content
+ * arrives, nothing loops or bounces. Only opacity and transforms move, so nothing shifts.
+ */
+:root {
+	--ease-out: cubic-bezier(0.2, 0, 0, 1);
+	--ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@keyframes eic-enter {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@utility animate-enter {
+	animation: eic-enter 240ms ease-out both;
+}
+
+/*
+ * Page transitions (View Transitions API, started in #lib/motion/view-transitions.ts).
+ * The old page lifts away quickly, the new one rises into place. The site header and the admin
+ * sidebar have their own names, so they stay put while the content changes.
+ */
+@keyframes eic-page-out {
+	to {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+}
+
+@keyframes eic-page-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+
+@keyframes eic-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes eic-fade-out {
+	to {
+		opacity: 0;
+	}
+}
+
+::view-transition-old(root) {
+	animation: 150ms var(--ease-in) both eic-page-out;
+}
+
+::view-transition-new(root) {
+	animation: 240ms var(--ease-out) both eic-page-in;
+}
+
+/* A shared element with no partner on the other page leaves or arrives with the page. */
+::view-transition-old(*):only-child {
+	animation: 150ms var(--ease-in) both eic-page-out;
+}
+
+::view-transition-new(*):only-child {
+	animation: 240ms var(--ease-out) both eic-page-in;
+}
+
+/* Shared elements (a card's cover becoming the page's hero photo) move in 280ms. */
+::view-transition-group(*) {
+	animation-duration: 280ms;
+	animation-timing-function: var(--ease-out);
+}
+
+/* The header and the sidebar keep still; only their contents crossfade (e.g. the active link). */
+::view-transition-group(site-nav),
+::view-transition-group(admin-sidebar) {
+	z-index: 50;
+	animation-duration: 150ms;
+}
+
+/* Swap them at once: two opposite fades leave the header half see-through mid-way. */
+::view-transition-old(site-nav),
+::view-transition-old(admin-sidebar) {
+	display: none;
+}
+
+::view-transition-new(site-nav),
+::view-transition-new(admin-sidebar) {
+	animation: none;
+}
+
+/* The phone menu (Nav.svelte, `site-menu`) fades out above the header when a link in it is followed. */
+::view-transition-group(site-menu) {
+	z-index: 60;
+}
+
+::view-transition-old(site-menu):only-child {
+	animation: 150ms linear both eic-fade-out;
+}
+
+[data-slot='sidebar-container'] {
+	view-transition-name: admin-sidebar;
+}
+
+/* The admin only crossfades. */
+:root[data-vt='admin']::view-transition-old(root) {
+	animation: 150ms linear both eic-fade-out;
+}
+
+:root[data-vt='admin']::view-transition-new(root) {
+	animation: 200ms linear both eic-fade-in;
+}
+
+/*
+ * Reveal on arrival (#lib/motion/reveal.ts). `motion` is set on <html> by the inline script in
+ * app.html (never under reduced motion, never without JavaScript); `motion-ready` once the
+ * reveal module has marked the page. Print and other media always show everything.
+ */
+@media screen {
+	/*
+	 * Content the server sent is never held back for JavaScript. On the first page load the hero
+	 * rises in with CSS alone, from the first paint; what is in view when the reveal module starts
+	 * stays visible, and only content further down is revealed on scroll.
+	 */
+	html.motion.first-load #main > :first-child {
+		animation: eic-enter 420ms var(--ease-out) both;
+	}
+
+	html.motion [data-reveal]:not([data-revealed]) {
+		opacity: 0;
+		translate: 0 8px;
+	}
+
+	html.motion [data-reveal][data-revealed]:not([data-reveal-done]) {
+		transition:
+			opacity 240ms var(--ease-out) var(--reveal-delay, 0ms),
+			translate 240ms var(--ease-out) var(--reveal-delay, 0ms);
+	}
+
+	/* `data-reveal="slow"`: a long fade, no rise (the hero's construction circle). */
+	html.motion [data-reveal='slow']:not([data-revealed]) {
+		translate: none;
+	}
+
+	html.motion [data-reveal='slow'][data-revealed]:not([data-reveal-done]) {
+		transition: opacity 1200ms var(--ease-out);
+	}
+
+	/* The handwritten note's arrow draws itself once its block is revealed. */
+	html.motion [data-reveal] .note-arrow path {
+		stroke-dasharray: 1 2;
+	}
+
+	html.motion [data-reveal]:not([data-revealed]) .note-arrow path {
+		stroke-dashoffset: 1.5;
+	}
+
+	html.motion [data-reveal][data-revealed]:not([data-reveal-done]) .note-arrow path {
+		transition: stroke-dashoffset 600ms var(--ease-out) calc(var(--reveal-delay, 0ms) + 120ms);
+	}
+
+	html.motion [data-reveal][data-revealed]:not([data-reveal-done]) .note-arrow path + path {
+		transition-duration: 220ms;
+		transition-delay: calc(var(--reveal-delay, 0ms) + 600ms);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

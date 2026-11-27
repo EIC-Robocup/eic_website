@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795722212316,
+      "tag": "20261126194332_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795722215448,
+      "tag": "20261126194335_storage_media_bucket",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795722218677,
+      "tag": "20261126194338_revoke_data_api_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795724791509,
+      "tag": "20261126202631_achievement_entrants",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795725530074,
+      "tag": "20261126203850_media_bucket_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795737450202,
+      "tag": "20261126235730_rate_limits",
+      "breakpoints": true
+    }
+  ]
+}

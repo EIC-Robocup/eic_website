@@ -1,0 +1,123 @@
+# Supabase CLI configuration (CLI v2.12x / v3.x).
+# Docs: https://supabase.com/docs/guides/local-development/cli/config
+#
+# Where these settings apply:
+# - `supabase start` (local development): everything below.
+# - Preview branches made by the GitHub integration (Pro plan): migrations, seed.sql (once,
+#   when the branch is created), [api], [auth] and [storage.buckets.*].
+# - Production with "Deploy to production" on: only new migrations and [storage.buckets.*].
+#   Production Auth (Site URL, redirect URLs, providers, email templates, SMTP) is set in the
+#   Supabase Dashboard. See docs/setup-supabase.md.
+
+# Local identifier only (Docker namespace), not the hosted project ref.
+project_id = "eic-website"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+# The site never uses the Data API (it talks to Postgres from its own server), so new tables
+# get no automatic grants to anon/authenticated/service_role.
+auto_expose_new_tables = false
+
+[db]
+port = 54322
+shadow_port = 54320
+# Must match the hosted project's Postgres major version (run `SHOW server_version;`).
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+# Runs after migrations on `supabase db reset` and once when a preview branch is created.
+# Never runs on production: load first-time production content with `pnpm db:seed`.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+# Public bucket for admin uploads. Also set by the storage_media_bucket and media_bucket_types
+# migrations. 50 MiB is the largest per-type limit (videos); the app checks the others (images
+# 10 MB, PDFs 20 MB, 3D models 25 MB). No SVG: an SVG in the bucket could run scripts on the
+# storage origin.
+[storage.buckets.media]
+public = true
+file_size_limit = "50MiB"
+allowed_mime_types = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "application/pdf",
+  "video/mp4",
+  "video/webm",
+  "model/gltf-binary",
+  "model/gltf+json",
+]
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+# Where sign in may return to. `*` matches anything except "." and "/", `**` matches anything.
+# Replace <vercel-team-slug> with your Vercel team or account slug (see docs/setup-vercel.md).
+additional_redirect_urls = [
+  "http://localhost:5173/**",
+  "http://127.0.0.1:5173/**",
+  "https://eicchula.club/**",
+  "https://*-<vercel-team-slug>.vercel.app/**",
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# The app only lets invited editors in (the editors table), whatever this says.
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "60s"
+otp_length = 6
+otp_expiry = 3600
+
+# Sign in emails link to the app's /auth/confirm page with a token hash, which works even
+# when the link is opened on another device. content_path is relative to the project root.
+[auth.email.template.magic_link]
+subject = "Your EIC Chula sign in link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Your EIC Chula sign in link"
+content_path = "./supabase/templates/confirmation.html"
+
+# OAuth for local development. Each provider needs its own OAuth app whose callback is
+# http://127.0.0.1:54321/auth/v1/callback. Put the values in supabase/.env (gitignored) and
+# set enabled = true. Preview branches get a new callback URL each, so use the email link there.
+[auth.external.github]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+email_optional = false
+
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+email_optional = false
