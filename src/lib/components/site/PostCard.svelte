@@ -56,8 +56,8 @@
 	const category = $derived(categoryLabel(post.category));
 	const tag = $derived(`h${headingLevel}`);
 	/**
-	 * The cover morphs into the post page's cover. The post page only shows a cover when the
-	 * post has one, so cards without a photo keep their placeholder out of the transition.
+	 * A cover photo morphs into the post page's cover. Without one, the card's placeholder and
+	 * the post page's empty image slot (different shapes and labels) stay out of the transition.
 	 */
 	const morph = $derived(post.coverUrl ? postMorphKey(post.slug) : null);
 	const coverClass = $derived(morph ? 'vt-target' : undefined);

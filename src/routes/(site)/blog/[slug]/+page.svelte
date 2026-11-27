@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import ImageSlot from '#lib/components/site/ImageSlot.svelte';
+	import { useHydrated } from '#lib/components/site/hydrated.svelte.ts';
 	import PostBody from '#lib/components/site/PostBody.svelte';
 	import PostCard from '#lib/components/site/PostCard.svelte';
 	import Seo from '#lib/components/site/Seo.svelte';
 	import Tag from '#lib/components/site/Tag.svelte';
+	import * as Collapsible from '#lib/components/ui/collapsible/index.js';
 	import {
 		categoryLabel,
 		formatDate,
@@ -26,10 +28,11 @@
 	const url = $derived(page.url.origin + page.url.pathname);
 	const showToc = $derived(data.headings.length >= 3);
 	const minutes = $derived(readingTime(data.readingMinutes));
-	/** The cover morphs from the post's card (see PostCard). */
-	const morph = $derived(postMorphKey(post.slug));
+	/** A cover photo morphs from the post's card (see PostCard); the empty slot does not. */
+	const morph = $derived(post.coverUrl ? postMorphKey(post.slug) : undefined);
 
 	let article = $state<HTMLElement>();
+	const hydrated = useHydrated();
 
 	/** Bylines like "AI Team" or "EIC Chula" are groups, not people. */
 	const isGroup = (name: string) => /\b(team|club|eic|advisors|support|lab)\b/i.test(name);
@@ -79,13 +82,32 @@
 
 <ReadingProgress target={article} />
 
+{#snippet tocSummary()}
+	<span class="text-label text-ink-muted">On this page</span>
+	<svg
+		aria-hidden="true"
+		width="16"
+		height="16"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="1.5"
+		class="shrink-0 text-ink-muted transition-transform duration-150 group-open:rotate-180 group-data-[state=open]:rotate-180"
+		><path d="M6 9l6 6 6-6" /></svg
+	>
+{/snippet}
+
+{#snippet inlineToc()}
+	<TableOfContents headings={data.headings} id="toc-inline" titled={false} class="px-5 pb-4" />
+{/snippet}
+
 <article bind:this={article} aria-labelledby="post-title">
 	<header class="border-b border-line bg-graph-paper">
 		<div class="site-container">
 			<div class="mx-auto flex max-w-[720px] flex-col gap-[22px] pt-10 pb-10 sm:pt-14 sm:pb-12">
 				<a
 					href="/blog"
-					class="-my-2 self-start py-2 text-sm text-ink-muted no-underline transition-colors duration-150 hover:text-ink"
+					class="-my-3 inline-flex min-h-11 items-center gap-1 self-start text-sm text-ink-muted no-underline transition-colors duration-150 hover:text-ink"
 					><span aria-hidden="true">←</span> All posts</a
 				>
 				<span class="text-label text-brand-text">{categoryLabel(post.category)}</span>
@@ -113,63 +135,58 @@
 		</div>
 	</header>
 
-	{#if post.coverUrl}
-		<div class="site-container pt-8 pb-10 sm:pt-12 sm:pb-14">
-			<figure
-				class="m-0 flex flex-col overflow-hidden rounded-lg border border-line"
-				data-vt-key={morph}
-			>
-				<ImageSlot
-					class="vt-target"
-					src={post.coverUrl}
-					alt={post.coverAlt}
-					label="Cover photo"
-					aspect="16 / 8"
-					iconSize={36}
-					sizes="(min-width: 1264px) 1200px, 100vw"
-					eager
-				/>
-				<figcaption class="text-label border-t border-line px-5 py-3.5 text-ink-muted">
-					Fig. 01{#if post.coverCaption}{' · '}{post.coverCaption}{/if}
-				</figcaption>
-			</figure>
-		</div>
-	{/if}
+	<!-- Fig. 01 is always the cover: the crop-marked image slot until a photo is set. -->
+	<div class="site-container pt-8 pb-10 sm:pt-12 sm:pb-14">
+		<figure
+			class="m-0 flex flex-col overflow-hidden rounded-lg border border-line"
+			data-vt-key={morph}
+		>
+			<ImageSlot
+				class={morph ? 'vt-target' : undefined}
+				src={post.coverUrl}
+				alt={post.coverAlt}
+				label="Cover photo"
+				aspect="16 / 8"
+				iconSize={36}
+				sizes="(min-width: 1264px) 1200px, 100vw"
+				eager
+			/>
+			<figcaption class="text-label border-t border-line px-5 py-3.5 text-ink-muted">
+				Fig. 01{#if post.coverCaption}{' · '}{post.coverCaption}{/if}
+			</figcaption>
+		</figure>
+	</div>
 
 	<div
-		class={[
-			'site-container xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] xl:gap-x-12',
-			!post.coverUrl && 'pt-10 sm:pt-14'
-		]}
+		class="site-container xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] xl:gap-x-12"
 	>
 		<div class="mx-auto w-full max-w-[720px] min-w-0 xl:col-start-2">
 			{#if showToc}
-				<details
-					class="group mb-10 rounded-lg border border-line bg-surface-200 xl:hidden [&_summary::-webkit-details-marker]:hidden"
-				>
-					<summary
-						class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-5"
-					>
-						<span class="text-label text-ink-muted">On this page</span>
-						<svg
-							aria-hidden="true"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							class="text-ink-muted transition-transform duration-150 group-open:rotate-180"
-							><path d="M6 9l6 6 6-6" /></svg
-						>
-					</summary>
-					<TableOfContents
-						headings={data.headings}
-						id="toc-inline"
-						titled={false}
-						class="px-5 pb-4"
-					/>
-				</details>
+				<!-- The frame stays put while the native <details> (before the page is interactive, and
+				     without JavaScript) gives way to the shadcn Collapsible. -->
+				<div class="mb-10 rounded-lg border border-line bg-surface-200 xl:hidden">
+					{#if hydrated.current}
+						<Collapsible.Root class="group">
+							<Collapsible.Trigger
+								class="flex min-h-12 w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-5 text-left"
+							>
+								{@render tocSummary()}
+							</Collapsible.Trigger>
+							<Collapsible.Content>
+								{@render inlineToc()}
+							</Collapsible.Content>
+						</Collapsible.Root>
+					{:else}
+						<details class="group [&_summary::-webkit-details-marker]:hidden">
+							<summary
+								class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 rounded-lg px-5"
+							>
+								{@render tocSummary()}
+							</summary>
+							{@render inlineToc()}
+						</details>
+					{/if}
+				</div>
 			{/if}
 
 			<!-- PostBody adds the KaTeX stylesheet itself when the post has math. -->
@@ -177,7 +194,7 @@
 
 			<footer class="flex flex-col gap-7 pt-10 pb-16 md:pb-20">
 				{#if post.tags.length}
-					<ul aria-label="Tags" class="m-0 flex list-none flex-wrap gap-2 p-0">
+					<ul aria-label="Tags" class="m-0 flex list-none flex-wrap gap-x-2 gap-y-3.5 p-0">
 						{#each post.tags as tag (tag)}
 							<li>
 								<Tag
@@ -196,7 +213,7 @@
 					{#if post.project}
 						<a
 							href="/projects/{post.project.slug}"
-							class="text-[15px] font-medium text-brand-text no-underline transition-colors duration-150 hover:text-ink"
+							class="inline-flex min-h-11 items-center gap-1 text-[15px] font-medium text-brand-text no-underline transition-colors duration-150 hover:text-ink"
 							>Part of the {post.project.title} project <span aria-hidden="true">→</span></a
 						>
 					{/if}
