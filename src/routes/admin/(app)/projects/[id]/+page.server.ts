@@ -23,10 +23,10 @@ const SLUG_TAKEN = 'Another project already uses this address. Pick another one.
 
 export const load: PageServerLoad = async ({ locals, params }) => {
 	requireEditor(locals);
-	if (!isUuid(params.id)) error(404, 'Project not found');
+	if (!isUuid(params.id)) error(404, 'This project does not exist. It may have been deleted.');
 
 	const [row] = await db.select().from(projects).where(eq(projects.id, params.id)).limit(1);
-	if (!row) error(404, 'Project not found');
+	if (!row) error(404, 'This project does not exist. It may have been deleted.');
 
 	const [slugs, featured, linkedPosts] = await Promise.all([
 		takenSlugs(row.id),
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 export const actions = {
 	save: async ({ request, locals, params }) => {
 		const editor = requireEditor(locals);
-		if (!isUuid(params.id)) error(404, 'Project not found');
+		if (!isUuid(params.id)) error(404, 'This project does not exist. It may have been deleted.');
 		const form = await request.formData();
 		const { values, errors } = validateProject(readProjectInput(form));
 		if (!errors.slug && (await slugTaken(values.slug, params.id))) errors.slug = SLUG_TAKEN;
