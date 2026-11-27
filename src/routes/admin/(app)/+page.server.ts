@@ -27,15 +27,45 @@ const TYPE_LABELS: Record<string, string> = {
 const typeLabel = (type: string) =>
 	TYPE_LABELS[type] ?? (type ? type.charAt(0).toUpperCase() + type.slice(1).replace(/[-_]/g, ' ') : 'Edit');
 
-/** Where an activity row links to, when its item still exists and has an editor page. */
+/** List sections on /admin/lists, by activity type (their editors' element ids). */
+const LIST_ANCHORS: Record<string, string> = {
+	achievement: 'achievements',
+	archive: 'archive',
+	sponsor: 'sponsors',
+	publication: 'publications'
+};
+
+/**
+ * Where an activity row links to: the item's own editor when it has one, else the admin page
+ * where it is edited. Deleted items link nowhere. Types come from the logActivity calls under
+ * src/routes/admin/(app).
+ */
 function activityHref(type: string, id: string | null, action: string): string | null {
-	if (!id || action === 'deleted') return null;
-	if (type === 'post') return `/admin/posts/${id}`;
-	if (type === 'page') {
-		const page = id.split('.')[0];
-		return isPageKey(page) ? `/admin/pages/${page}` : null;
+	if (action === 'deleted') return null;
+	switch (type) {
+		case 'post':
+			return id ? `/admin/posts/${id}` : '/admin/posts';
+		case 'project':
+			return id ? `/admin/projects/${id}` : '/admin/projects';
+		case 'page': {
+			const page = id?.split('.')[0] ?? '';
+			return isPageKey(page) ? `/admin/pages/${page}` : '/admin/pages';
+		}
+		// /admin/people opens a person's sheet from ?person=<id>.
+		case 'person':
+			return id ? `/admin/people?person=${encodeURIComponent(id)}` : '/admin/people';
+		// Teams are edited in the Manage teams dialog on /admin/people.
+		case 'team':
+			return '/admin/people';
+		case 'media':
+			return '/admin/media';
+		case 'message':
+			return '/admin/inbox';
+		case 'editor':
+			return '/admin/settings';
+		default:
+			return Object.hasOwn(LIST_ANCHORS, type) ? `/admin/lists#${LIST_ANCHORS[type]}` : null;
 	}
-	return null;
 }
 
 type DashboardEdit = {
