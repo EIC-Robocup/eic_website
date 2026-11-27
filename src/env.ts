@@ -14,7 +14,7 @@ const optional = (value: string | undefined) => (value?.trim() ? value.trim() : 
 export const variables = defineEnvVars({
 	DATABASE_URL: {
 		description:
-			'Postgres connection string. In production use the Supabase transaction pooler (port 6543).',
+			'Postgres connection string. Wins over POSTGRES_URL. On Vercel, set it only without the Supabase integration (transaction pooler, port 6543).',
 		schema: optional
 	},
 	POSTGRES_URL: {
