@@ -18,13 +18,25 @@ export const authConfigured = Boolean(SUPABASE_URL && publicKey);
 /** True when uploads can work (URL and secret key are set). */
 export const storageConfigured = Boolean(SUPABASE_URL && secretKey);
 
+/** Answers every request with an empty success, without leaving the server. */
+const offlineFetch: typeof fetch = async () =>
+	new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+
 /**
  * A Supabase client bound to this request's cookies. Used only for auth: sign in,
  * code exchange, reading the verified user, sign out. Create one per request.
+ *
+ * `offline: true` gives a stand-in whose requests never reach Supabase but which writes the
+ * same cookies and headers. The sign in form uses it for uninvited addresses, so its answer
+ * looks the same whoever asks.
  */
-export function createRequestClient(event: RequestEvent): SupabaseClient | null {
+export function createRequestClient(
+	event: RequestEvent,
+	{ offline = false }: { offline?: boolean } = {}
+): SupabaseClient | null {
 	if (!SUPABASE_URL || !publicKey) return null;
 	return createServerClient(SUPABASE_URL, publicKey, {
+		...(offline ? { global: { fetch: offlineFetch } } : {}),
 		cookies: {
 			getAll: () => event.cookies.getAll(),
 			setAll: (cookiesToSet, headers) => {

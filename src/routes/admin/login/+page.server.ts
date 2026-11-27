@@ -2,7 +2,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/env';
 import { ADMIN_EMAILS, DEV_AUTH_EMAIL } from '$app/env/private';
 import { isInvited, normalizeEmail, safeNext } from '#lib/server/auth.ts';
-import { authConfigured } from '#lib/server/supabase.ts';
+import { hit, isSpent, limitKey, spend, type Limit } from '#lib/server/rate-limit.ts';
+import { authConfigured, createRequestClient } from '#lib/server/supabase.ts';
 import {
 	completeSignIn,
 	loginErrorMessage,
@@ -12,7 +13,9 @@ import type { Actions, PageServerLoad } from './$types';
 
 /** The same answer for every address, so the form never tells who is invited. */
 const SENT_MESSAGE = 'If this email is invited, a sign in link is on its way.';
-const RATE_LIMITED = 'Too many sign in emails were sent just now. Wait a minute, then try again.';
+const RATE_LIMITED =
+	'Too many sign in emails were asked for just now. Try again later, or continue with GitHub or Google.';
+const TOO_MANY_CODES = 'Too many tries. Wait a few minutes, then try again.';
 const NOT_CONFIGURED = 'Sign in is not set up on this site yet.';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,22 +23,46 @@ const PROVIDERS = ['github', 'google'] as const;
 type Provider = (typeof PROVIDERS)[number];
 
 /**
- * One email per address per minute, checked before the invite lookup so invited and
- * uninvited addresses get the same answer. Per server instance; Supabase's own limits
- * still apply behind it.
+ * Sign in email limits (#lib/server/rate-limit.ts), shared by every server instance. All of
+ * them are checked before the invite lookup, so an over-limit request gets the same answer
+ * whether or not the address is invited.
  */
-const recentRequests = new Map<string, number>();
-const REQUEST_GAP_MS = 60_000;
+const EMAIL_LIMITS = {
+	/** Requests from one address (an IPv6 /64). */
+	client: { max: 5, windowSeconds: 10 * 60 },
+	/** Requests for one email address. */
+	address: { max: 3, windowSeconds: 60 * 60 },
+	/**
+	 * Emails the site sends in all, kept under the Supabase project's email limit (30 an hour
+	 * with custom SMTP), so a flood can't use up the quota and lock every editor out. Only real
+	 * sends count; a 429 from Supabase uses up the rest of the hour.
+	 */
+	sends: { max: 20, windowSeconds: 60 * 60 }
+} satisfies Record<string, Limit>;
 
-function tooSoon(email: string): boolean {
-	const now = Date.now();
-	if (recentRequests.size > 500) {
-		for (const [key, at] of recentRequests) if (now - at > REQUEST_GAP_MS) recentRequests.delete(key);
+/** Code entry limits, checked before Supabase sees the code. */
+const CODE_LIMITS = {
+	client: { max: 10, windowSeconds: 10 * 60 },
+	address: { max: 5, windowSeconds: 10 * 60 }
+} satisfies Record<string, Limit>;
+
+const SENDS_KEY = 'login-sends';
+
+/**
+ * The email action always takes at least this long, invited or not, so the response time
+ * doesn't give away who gets an email. Sends slower than this (a slow SMTP server) can still
+ * stand out, but the limits above leave only a few tries an hour per address.
+ */
+const EMAIL_RESPONSE_FLOOR_MS = 1_500;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function clientAddress(getClientAddress: () => string): string {
+	try {
+		return getClientAddress() || 'unknown';
+	} catch {
+		return 'unknown';
 	}
-	const last = recentRequests.get(email);
-	if (last !== undefined && now - last < REQUEST_GAP_MS) return true;
-	recentRequests.set(email, now);
-	return false;
 }
 
 function readNext(form: FormData): string {
@@ -96,22 +123,37 @@ export const actions = {
 	},
 
 	/** "Email me a sign in link": only invited addresses get an email; everyone sees the same answer. */
-	magic: async ({ request, locals, url, cookies }) => {
+	magic: async (event) => {
+		const { request, locals, url, cookies, getClientAddress } = event;
+		const started = performance.now();
 		const form = await request.formData();
 		const raw = form.get('email');
 		const email = normalizeEmail(typeof raw === 'string' ? raw : '').slice(0, 320);
 		const next = readNext(form);
 
-		if (!EMAIL.test(email) || email.length > 254) {
+		if (!EMAIL.test(email) || email.length > 254 || email.includes('\u0000')) {
 			return fail(400, {
 				stage: 'email' as const,
-				email,
+				email: email.replace(/\u0000/g, ''),
 				message: 'Enter your email address, like name@example.com.',
 				errors: { email: 'Enter a valid email address.' }
 			});
 		}
 		if (!locals.supabase) return fail(503, { stage: 'email' as const, email, message: NOT_CONFIGURED });
-		if (tooSoon(email)) return fail(429, { stage: 'email' as const, email, message: RATE_LIMITED });
+
+		// Every limit before the invite lookup: the same refusal for every address.
+		const [clientKey, addressKey] = await Promise.all([
+			limitKey('login-client', clientAddress(getClientAddress)),
+			limitKey('login-email', email)
+		]);
+		const [clientOver, addressOver, sendsSpent] = await Promise.all([
+			hit(clientKey, EMAIL_LIMITS.client),
+			hit(addressKey, EMAIL_LIMITS.address),
+			isSpent(SENDS_KEY, EMAIL_LIMITS.sends)
+		]);
+		if (clientOver || addressOver || sendsSpent) {
+			return fail(429, { stage: 'email' as const, email, message: RATE_LIMITED });
+		}
 
 		let invited: boolean;
 		try {
@@ -125,22 +167,28 @@ export const actions = {
 			});
 		}
 
-		if (invited) {
-			rememberNext(cookies, next);
-			// No query string: the email template appends ?token_hash=... to this URL.
-			const { error } = await locals.supabase.auth.signInWithOtp({
-				email,
-				options: { emailRedirectTo: `${url.origin}/auth/confirm`, shouldCreateUser: true }
-			});
-			if (error) {
-				if (error.status === 429) {
-					return fail(429, { stage: 'email' as const, email, message: RATE_LIMITED });
-				}
-				// Logged, but the answer stays the same so it says nothing about the invite list.
-				console.error('Could not send the sign in email', error.code ?? error.name, error.message);
-			}
+		rememberNext(cookies, next);
+		// Uninvited addresses go through a client whose requests never leave the server, so
+		// both answers carry the same cookies (the PKCE code verifier) and headers.
+		const client = invited ? locals.supabase : (createRequestClient(event, { offline: true }) ?? locals.supabase);
+		// No query string: the email template appends ?token_hash=... to this URL.
+		const { error } = await client.auth.signInWithOtp({
+			email,
+			options: { emailRedirectTo: `${url.origin}/auth/confirm`, shouldCreateUser: true }
+		});
+		if (invited && !error) {
+			await hit(SENDS_KEY, EMAIL_LIMITS.sends);
+		} else if (error?.status === 429) {
+			// Supabase's own email limit: refuse everyone until the hour is up, but answer this
+			// request as usual, since only invited addresses ever reach Supabase.
+			console.error('Supabase refused the sign in email (rate limited)', error.code ?? error.name);
+			await spend(SENDS_KEY, EMAIL_LIMITS.sends);
+		} else if (error) {
+			// Logged, but the answer stays the same so it says nothing about the invite list.
+			console.error('Could not send the sign in email', error.code ?? error.name, error.message);
 		}
 
+		await sleep(Math.max(0, EMAIL_RESPONSE_FLOOR_MS - (performance.now() - started)));
 		return { stage: 'code' as const, email, message: SENT_MESSAGE };
 	},
 
@@ -154,8 +202,12 @@ export const actions = {
 		const token = (typeof rawCode === 'string' ? rawCode : '').replace(/\D/g, '');
 		const next = readNext(form);
 
-		if (!EMAIL.test(email)) {
-			return fail(400, { stage: 'email' as const, email, message: 'Enter your email address first.' });
+		if (!EMAIL.test(email) || email.includes('\u0000')) {
+			return fail(400, {
+				stage: 'email' as const,
+				email: email.replace(/\u0000/g, ''),
+				message: 'Enter your email address first.'
+			});
 		}
 		if (token.length < 6 || token.length > 10) {
 			return fail(400, {
@@ -167,10 +219,23 @@ export const actions = {
 		}
 		if (!locals.supabase) return fail(503, { stage: 'code' as const, email, message: NOT_CONFIGURED });
 
+		// Wrong codes in a burst would trip Supabase's shared verify limit for every editor.
+		const [clientKey, addressKey] = await Promise.all([
+			limitKey('verify-client', clientAddress(event.getClientAddress)),
+			limitKey('verify-email', email)
+		]);
+		const [clientOver, addressOver] = await Promise.all([
+			hit(clientKey, CODE_LIMITS.client),
+			hit(addressKey, CODE_LIMITS.address)
+		]);
+		if (clientOver || addressOver) {
+			return fail(429, { stage: 'code' as const, email, message: TOO_MANY_CODES });
+		}
+
 		const { error } = await locals.supabase.auth.verifyOtp({ email, token, type: 'email' });
 		if (error) {
 			if (error.status === 429) {
-				return fail(429, { stage: 'code' as const, email, message: 'Too many tries. Wait a few minutes, then try again.' });
+				return fail(429, { stage: 'code' as const, email, message: TOO_MANY_CODES });
 			}
 			return fail(400, {
 				stage: 'code' as const,
