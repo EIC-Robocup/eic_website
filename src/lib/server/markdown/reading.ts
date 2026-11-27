@@ -35,9 +35,23 @@ export function cleanSource(markdown: string | null | undefined): string {
 /** Elements whose content is never read as text (as in sanitize.ts). */
 const NON_TEXT = /<(script|style|textarea|option|noscript|iframe|object|embed|svg|math|template|title|select|button|canvas|video|audio|frameset|frame|noembed|noframes|xmp|head)\b[\s\S]*?(?:<\/\1\s*>|$)/gi;
 
-/** Words in raw HTML from a post: tags and non-text elements left out. */
+/** A start or end tag, with any `>` inside quoted attribute values (not a lone `<`). */
+const TAG = /<\/?[a-zA-Z](?:[^>"']|"[^"]*"|'[^']*')*>?/g;
+/** A character reference such as `&nbsp;`, `&#8212;` or `&#x2014;`. */
+const ENTITY = /&(?:#\d+|#x[\da-f]+|[a-z][a-z\d]*);/gi;
+
+/**
+ * Words in raw HTML from a post: comments, tags, non-text elements and character references
+ * left out, so `&nbsp;` is a space, not a word, and a `<` in text doesn't swallow the line.
+ */
 function htmlWords(html: string): number {
-	return countWords(html.replace(NON_TEXT, ' ').replace(/<[^>]*>?/g, ' '));
+	return countWords(
+		html
+			.replace(/<!--[\s\S]*?(?:-->|$)/g, ' ')
+			.replace(NON_TEXT, ' ')
+			.replace(TAG, ' ')
+			.replace(ENTITY, ' ')
+	);
 }
 
 /** Leaf text of a token, for the word count. */
