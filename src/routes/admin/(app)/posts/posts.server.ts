@@ -4,7 +4,7 @@
  */
 import { fail, type ActionFailure } from '@sveltejs/kit';
 import { and, asc, desc, eq, isNotNull, ne, notInArray, sql } from 'drizzle-orm';
-import { readBool, readImage, readOptional, readTags, readText } from '#lib/components/admin/form-data.ts';
+import { readBool, readImage, readOptional, readTags, readText, stripNul } from '#lib/components/admin/form-data.ts';
 import {
 	LIMITS,
 	SLUG_PATTERN,
@@ -208,7 +208,7 @@ export async function readPostForm(form: FormData, now = new Date()): Promise<Re
 	if (excerpt.length > LIMITS.excerpt) errors.excerpt = `Keep the excerpt under ${LIMITS.excerpt} characters.`;
 
 	const rawBody = form.get('body');
-	const body = typeof rawBody === 'string' ? rawBody.replace(/\r\n?/g, '\n') : '';
+	const body = typeof rawBody === 'string' ? stripNul(rawBody).replace(/\r\n?/g, '\n') : '';
 	if (byteLength(body) > LIMITS.bodyBytes) errors.body = 'The post is longer than 200 KB. Split it into two posts.';
 
 	const category = readText(form, 'category');
@@ -327,13 +327,16 @@ export async function savePost(
 	const { values } = read;
 
 	let previous: Pick<Post, 'status' | 'publishedAt' | 'updatedAt' | 'updatedBy' | 'slug'> | null = null;
+	const gone = () => ({ ok: false as const, failure: fail(404, { message: 'This post was deleted. Copy your text before leaving the page.' }) });
 	if (id) {
+		// Not a post id at all (a hand-made URL): Postgres would refuse it with a 500.
+		if (!isUuid(id)) return gone();
 		const [row] = await db
 			.select({ status: posts.status, publishedAt: posts.publishedAt, updatedAt: posts.updatedAt, updatedBy: posts.updatedBy, slug: posts.slug })
 			.from(posts)
 			.where(eq(posts.id, id))
 			.limit(1);
-		if (!row) return { ok: false, failure: fail(404, { message: 'This post was deleted. Copy your text before leaving the page.' }) };
+		if (!row) return gone();
 		previous = row;
 
 		// Someone else saved since this editor opened the post.
