@@ -188,7 +188,7 @@ Authentication → **Emails** → **Templates**. Replace the body of both **Magi
 ```
 
 Subject for both: `Your EIC Chula sign in link`. (The same template is in
-`supabase/templates/magic_link.html`.)
+`supabase/templates/magic_link.html` and `confirmation.html`.)
 
 Why: the link goes to the site's `/auth/confirm` page, which asks for one click before signing
 in. Email scanners such as Microsoft 365 Safe Links open links in emails automatically, and
@@ -290,6 +290,9 @@ Settings**; once that's done you can remove `ADMIN_EMAILS`.
    `supabase/migrations/meta/`). Commit both.
 3. Open a pull request into `main`. With Pro branching on, a preview database tests it.
 4. Merge. The integration applies the migration to production.
+
+For SQL that Drizzle can't generate, write a custom migration with
+`pnpm exec drizzle-kit generate --custom --name=xyz` and fill in the empty file it creates.
 
 Rules: never edit a migration that has already been merged (write a new one), and prefer
 changes that old code can live with for a minute (add a column first, remove the old one in a

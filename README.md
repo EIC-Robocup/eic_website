@@ -113,13 +113,14 @@ merged. Never edit a migration that is already merged; for hand-written SQL, run
 
 ### Caching
 
-Public pages, their `__data.json`, `/rss.xml` and `/sitemap.xml` answer with
+The site sends public pages, their `__data.json`, `/rss.xml` and `/sitemap.xml` with
 `cache-control: public, max-age=0, s-maxage=60, stale-while-revalidate=600` (the `publicCache`
 hook in `src/hooks.server.ts`). Vercel's CDN serves a copy for 60 seconds without running the
 site's function or any query, then may serve it once more while it fetches a new one (for up
 to 10 minutes). So editors' changes show within about a minute; a new deployment starts with
 an empty cache. Only a GET or HEAD answered 200 on a `(site)` route, with no `set-cookie`, is
-cached. The admin panel, sign in and the API are `private, no-store`.
+cached. Nothing else is: the admin panel is `private, no-store`, and Vercel's CDN doesn't
+keep responses without `s-maxage` (sign in, `/auth/*`, `/api/health`).
 
 Because of this, **no `(site)` load may read `locals.user`, `locals.editor` or cookies**: the
 CDN would hand one visitor's page to everyone.

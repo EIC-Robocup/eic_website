@@ -162,9 +162,10 @@ them. The custom domain is public. Change this in **Settings → Deployment Prot
 ## 7. The daily keep-alive
 
 `vercel.json` schedules `GET /api/health` once a day (03:17 UTC). The endpoint runs one tiny
-query, which keeps a Free plan Supabase project from pausing after a quiet week. It shows up
-under **Settings → Cron Jobs** after the first production deployment. Cron jobs only run on
-production.
+query, which keeps a Free plan Supabase project from pausing after a quiet week. The same run
+tidies up: it deletes rate limit counters older than a day and removes the hashed sender
+address from contact messages older than a day. It shows up under **Settings → Cron Jobs**
+after the first production deployment. Cron jobs only run on production.
 
 ## 8. Local environment from Vercel (optional)
 
@@ -215,5 +216,6 @@ behaviour is no surprise.
 | A saved change doesn't show on the site | Public pages are cached for about a minute (step 9). Wait a minute and reload, twice if needed. |
 | Uploaded photos load at full size, not resized | `SUPABASE_URL` was missing when the site was built (step 9). Check it exists for that environment and redeploy. |
 | The browser console shows "Content-Security-Policy" errors | Something tried to load from a host the site doesn't allow (step 9). On previews, errors for `vercel.live` come from the Vercel toolbar and are harmless. |
+| Visitors say the contact form refused their message ("You have sent a lot of messages in a short time" or "We are getting a lot of messages right now") | The contact form's rate limits (README, "Rate limits"). They clear within 10 minutes to an hour; a day for 20 messages from one email address. |
 | Build log warns about Node 26 | Expected (see Node.js above). |
 | Pages are slow | Make sure the function region is Singapore (step 3) and Supabase is in Singapore. |
