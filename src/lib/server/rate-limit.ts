@@ -7,7 +7,8 @@
  *
  * Keys never hold a raw IP or email address. Build them with `limitKey(scope, value)`, which
  * stores a keyed hash (#lib/server/secret.ts), so the table can't be read back into who asked.
- * IPv6 addresses count per /64, because one subscriber usually gets a whole /64.
+ * For a client address use `clientLimitKey(scope, ip)`: IPv6 addresses count per /64, because
+ * one subscriber usually gets a whole /64.
  *
  * When the query fails (the rate_limits migration has not run yet, or the database is down),
  * the limiter fails open to a per-instance memory counter with the same limits. Failing closed
@@ -49,9 +50,14 @@ export function clientHash(ip: string): Promise<string> {
 	return keyedHash('client-address-v1', addressBucket(ip));
 }
 
-/** A rate limit key: `<scope>:<keyed hash of value>`. */
+/** A rate limit key: `<scope>:<keyed hash of value>`. For a client address use clientLimitKey. */
 export async function limitKey(scope: string, value: string): Promise<string> {
 	return `${scope}:${await keyedHash(`rate-limit-v1:${scope}`, value)}`;
+}
+
+/** A rate limit key for a client address: limitKey of its address bucket (an IPv6 /64). */
+export function clientLimitKey(scope: string, ip: string): Promise<string> {
+	return limitKey(scope, addressBucket(ip));
 }
 
 /* ------------------------------------------------------------------------- */

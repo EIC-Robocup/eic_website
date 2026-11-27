@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/env';
 import { ADMIN_EMAILS, DEV_AUTH_EMAIL } from '$app/env/private';
 import { isInvited, normalizeEmail, safeNext } from '#lib/server/auth.ts';
-import { hit, isSpent, limitKey, spend, type Limit } from '#lib/server/rate-limit.ts';
+import { clientLimitKey, hit, isSpent, limitKey, spend, type Limit } from '#lib/server/rate-limit.ts';
 import { authConfigured, createRequestClient } from '#lib/server/supabase.ts';
 import {
 	completeSignIn,
@@ -152,7 +152,7 @@ export const actions = {
 
 		// Every limit before the invite lookup: the same refusal for every address.
 		const [clientKey, addressKey, intervalKey] = await Promise.all([
-			limitKey('login-client', clientAddress(getClientAddress)),
+			clientLimitKey('login-client', clientAddress(getClientAddress)),
 			limitKey('login-email', email),
 			limitKey('login-email-interval', email)
 		]);
@@ -238,7 +238,7 @@ export const actions = {
 
 		// Wrong codes in a burst would trip Supabase's shared verify limit for every editor.
 		const [clientKey, addressKey] = await Promise.all([
-			limitKey('verify-client', clientAddress(event.getClientAddress)),
+			clientLimitKey('verify-client', clientAddress(event.getClientAddress)),
 			limitKey('verify-email', email)
 		]);
 		const [clientOver, addressOver] = await Promise.all([

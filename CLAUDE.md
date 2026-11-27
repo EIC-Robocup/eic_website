@@ -85,7 +85,9 @@ load the pages that use it.
   hashed by the build. Check the console for CSP errors on `pnpm build && pnpm preview:vercel`.
 - A new public form or endpoint that sends email or writes rows gets a limit:
   `hit(await limitKey('scope', value), { max, windowSeconds })` from
-  `#lib/server/rate-limit.ts`. Never store raw IPs or emails for it.
+  `#lib/server/rate-limit.ts`. For a client address use `clientLimitKey('scope', ip)`
+  instead, which counts an IPv6 /64 as one client; `limitKey` is for other values such as
+  emails. Never store raw IPs or emails for it.
 - After adding or replacing a photo in `static/images/archive` or `static/images/people`, run
   `pnpm images:resize` (`--force` after a replace) and commit the copies and
   `src/lib/image.ts`.
