@@ -30,3 +30,10 @@ export const hintClass = 'text-xs leading-[18px] font-normal text-ink-muted';
 
 /** Field label: 13px, medium. */
 export const labelClass = 'text-[13px] leading-5 font-medium text-ink';
+
+/**
+ * Column name above a field in a repeating row (ListEditor), for widths where the header row
+ * is hidden. Hide it where the header row shows, e.g. `${rowLabelClass} sm:hidden`, and add
+ * aria-hidden="true": the field's own aria-label ("Year of achievement 1") already names it.
+ */
+export const rowLabelClass = 'text-label text-[11px] leading-4 text-ink-muted';

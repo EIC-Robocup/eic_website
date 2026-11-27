@@ -48,8 +48,13 @@
 		reorderable?: boolean;
 		/** Where the Add button goes. Use `none` and call `add()` (bind:this) to put it in a Panel header. */
 		addPosition?: 'bottom' | 'none';
-		/** Column headings above the rows, laid out like the row snippet. */
+		/**
+		 * Column headings above the rows, laid out like the row snippet. Shown from `sm` up
+		 * (see `headerClass`); below that, label each field in the row with `rowLabelClass`.
+		 */
 		header?: Snippet;
+		/** Where the header row shows. Default `hidden sm:flex`; use a container query for rows that do. */
+		headerClass?: string;
 		/** Shown when there are no rows. */
 		empty?: Snippet;
 		/** Classes for each row's field area, e.g. "grid gap-2.5 sm:grid-cols-[140px_1fr]". */
@@ -72,6 +77,7 @@
 		reorderable = true,
 		addPosition = 'bottom',
 		header,
+		headerClass = 'hidden sm:flex',
 		empty,
 		rowClass = 'grid min-w-0 flex-1 gap-2.5 sm:auto-cols-fr sm:grid-flow-col',
 		onchange,
@@ -142,7 +148,7 @@
 
 <div class={['flex min-w-0 flex-col gap-2.5', className]}>
 	{#if header && items.length}
-		<div class="hidden items-center gap-2 sm:flex" aria-hidden="true">
+		<div class={['items-center gap-2', headerClass]} aria-hidden="true">
 			{#if numbered}<span class="w-7 shrink-0"></span>{/if}
 			<div class={['text-label min-w-0 flex-1 text-[11px] text-ink-muted', rowClass]}>{@render header()}</div>
 			<span class={['shrink-0', reorderable ? 'w-[140px]' : 'w-11']}></span>
@@ -153,7 +159,8 @@
 		{#each items as item, index (keyOf(item))}
 			<li data-list-row class="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center">
 				{#if numbered}
-					<span class="text-label w-7 shrink-0 pt-3.5 text-brand-text sm:pt-0" aria-hidden="true">
+					<!-- On phones, level with the field labels when there are any, else with the first field. -->
+					<span class={['text-label w-7 shrink-0 text-brand-text', !header && 'pt-3.5 sm:pt-0']} aria-hidden="true">
 						{pad(index + 1)}
 					</span>
 				{/if}

@@ -9,7 +9,7 @@
 	import { untrack } from 'svelte';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import ListEditor from '../ListEditor.svelte';
-	import { inputClass, monoInputClass } from '../styles.ts';
+	import { inputClass, monoInputClass, rowLabelClass } from '../styles.ts';
 	import ListForm from './ListForm.svelte';
 	import SectionNotice from './SectionNotice.svelte';
 	import { LIST_MAX, emptyRow, type AchievementRow, type Errors } from './rows.ts';
@@ -20,6 +20,7 @@
 	let rows = $state(untrack(() => $state.snapshot(server)));
 	let editor: ListEditor<AchievementRow> | undefined = $state();
 
+	const FIELDS = ['year', 'placement', 'entrants', 'competition', 'shortName', 'location'] as const;
 	const LABELS: Record<string, string> = {
 		year: 'Year',
 		placement: 'Place',
@@ -68,80 +69,94 @@
 				itemLabel="achievement"
 				addPosition="none"
 				max={LIST_MAX.achievements}
+				headerClass="hidden @4xl:flex"
 				rowClass="grid min-w-0 flex-1 grid-cols-6 gap-2 @max-4xl:border-t @max-4xl:border-line @max-4xl:pt-3 @xl:grid-cols-[76px_72px_64px_minmax(0,1fr)] @4xl:grid-cols-[76px_72px_64px_minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1fr)]"
 			>
 				{#snippet header()}
-					<span class="hidden @4xl:block">Year</span>
-					<span class="hidden @4xl:block">Place</span>
-					<span class="hidden @4xl:block">Teams</span>
-					<span class="hidden @4xl:block">Competition</span>
-					<span class="hidden @4xl:block">Timeline label</span>
-					<span class="hidden @4xl:block">Where</span>
+					{#each FIELDS as key (key)}<span>{LABELS[key]}</span>{/each}
 				{/snippet}
 				{#snippet row(item, i)}
 					{@const problems = rowErrors(errors, i)}
 					{@const describedBy = problems.length ? `achievement-${i}-errors` : undefined}
 					{@const invalid = (key: string) => (errors[`achievements.${i}.${key}`] ? 'true' : undefined)}
-					<Input
-						bind:value={item.year}
-						aria-label="Year of achievement {i + 1}"
-						aria-invalid={invalid('year')}
-						aria-describedby={describedBy}
-						placeholder="Year"
-						inputmode="numeric"
-						maxlength={4}
-						autocomplete="off"
-						class="{monoInputClass} {span.year}"
-					/>
-					<Input
-						bind:value={item.placement}
-						aria-label="Place in achievement {i + 1}"
-						aria-invalid={invalid('placement')}
-						aria-describedby={describedBy}
-						placeholder="6th"
-						maxlength={40}
-						autocomplete="off"
-						class="{inputClass} font-display font-semibold {span.placement}"
-					/>
-					<Input
-						bind:value={item.entrants}
-						aria-label="Teams taking part in achievement {i + 1}"
-						aria-invalid={invalid('entrants')}
-						aria-describedby={describedBy}
-						placeholder="Teams"
-						title="How many teams took part, for 6th of 24"
-						inputmode="numeric"
-						maxlength={5}
-						autocomplete="off"
-						class="{monoInputClass} {span.entrants}"
-					/>
-					<Input
-						bind:value={item.competition}
-						aria-label="Competition of achievement {i + 1}"
-						aria-invalid={invalid('competition')}
-						aria-describedby={describedBy}
-						placeholder="RoboCup@Home Open League"
-						maxlength={200}
-						class="{inputClass} {span.competition}"
-					/>
-					<Input
-						bind:value={item.shortName}
-						aria-label="Timeline label of achievement {i + 1}"
-						aria-invalid={invalid('shortName')}
-						aria-describedby={describedBy}
-						placeholder="Timeline label, e.g. @Home"
-						maxlength={40}
-						class="{inputClass} {span.shortName}"
-					/>
-					<Input
-						bind:value={item.location}
-						aria-label="Where achievement {i + 1} took place"
-						aria-invalid={invalid('location')}
-						aria-describedby={describedBy}
-						placeholder="City, country"
-						maxlength={120}
-						class="{inputClass} {span.location}"
-					/>
+					<div class="flex min-w-0 flex-col gap-1 {span.year}">
+						<span class="{rowLabelClass} @4xl:hidden" aria-hidden="true">{LABELS.year}</span>
+						<Input
+							bind:value={item.year}
+							aria-label="Year of achievement {i + 1}"
+							aria-invalid={invalid('year')}
+							aria-describedby={describedBy}
+							placeholder="Year"
+							inputmode="numeric"
+							maxlength={4}
+							autocomplete="off"
+							class={monoInputClass}
+						/>
+					</div>
+					<div class="flex min-w-0 flex-col gap-1 {span.placement}">
+						<span class="{rowLabelClass} @4xl:hidden" aria-hidden="true">{LABELS.placement}</span>
+						<Input
+							bind:value={item.placement}
+							aria-label="Place in achievement {i + 1}"
+							aria-invalid={invalid('placement')}
+							aria-describedby={describedBy}
+							placeholder="6th"
+							maxlength={40}
+							autocomplete="off"
+							class="{inputClass} font-display font-semibold"
+						/>
+					</div>
+					<div class="flex min-w-0 flex-col gap-1 {span.entrants}">
+						<span class="{rowLabelClass} @4xl:hidden" aria-hidden="true">{LABELS.entrants}</span>
+						<Input
+							bind:value={item.entrants}
+							aria-label="Teams taking part in achievement {i + 1}"
+							aria-invalid={invalid('entrants')}
+							aria-describedby={describedBy}
+							placeholder="Teams"
+							title="How many teams took part, for 6th of 24"
+							inputmode="numeric"
+							maxlength={5}
+							autocomplete="off"
+							class={monoInputClass}
+						/>
+					</div>
+					<div class="flex min-w-0 flex-col gap-1 {span.competition}">
+						<span class="{rowLabelClass} @4xl:hidden" aria-hidden="true">{LABELS.competition}</span>
+						<Input
+							bind:value={item.competition}
+							aria-label="Competition of achievement {i + 1}"
+							aria-invalid={invalid('competition')}
+							aria-describedby={describedBy}
+							placeholder="RoboCup@Home Open League"
+							maxlength={200}
+							class={inputClass}
+						/>
+					</div>
+					<div class="flex min-w-0 flex-col gap-1 {span.shortName}">
+						<span class="{rowLabelClass} @4xl:hidden" aria-hidden="true">{LABELS.shortName}</span>
+						<Input
+							bind:value={item.shortName}
+							aria-label="Timeline label of achievement {i + 1}"
+							aria-invalid={invalid('shortName')}
+							aria-describedby={describedBy}
+							placeholder="e.g. @Home"
+							maxlength={40}
+							class={inputClass}
+						/>
+					</div>
+					<div class="flex min-w-0 flex-col gap-1 {span.location}">
+						<span class="{rowLabelClass} @4xl:hidden" aria-hidden="true">{LABELS.location}</span>
+						<Input
+							bind:value={item.location}
+							aria-label="Where achievement {i + 1} took place"
+							aria-invalid={invalid('location')}
+							aria-describedby={describedBy}
+							placeholder="City, country"
+							maxlength={120}
+							class={inputClass}
+						/>
+					</div>
 					{#if problems.length}
 						<p id={describedBy} class="col-span-full m-0 text-xs leading-[18px] text-brand-text">
 							{problems.join(' ')}

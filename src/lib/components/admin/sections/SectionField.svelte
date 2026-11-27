@@ -20,7 +20,7 @@
 	import ListEditor from '../ListEditor.svelte';
 	import TagsInput from '../TagsInput.svelte';
 	import ToggleRow from '../ToggleRow.svelte';
-	import { hintClass, inputClass, labelClass } from '../styles.ts';
+	import { hintClass, inputClass, labelClass, rowLabelClass } from '../styles.ts';
 	import ScalarControl from './ScalarControl.svelte';
 	import { getRowPreviewers } from './preview.ts';
 	import { LIMITS, emptyItem } from './values.ts';
@@ -206,6 +206,9 @@
 					{:else if compactRows}
 						{@const errorId = `${uid}-${index}-${sub.key}-error`}
 						<div class="flex min-w-0 flex-col gap-1">
+							{#if field.fields.length > 1}
+								<span class="{rowLabelClass} sm:hidden" aria-hidden="true">{sub.label}</span>
+							{/if}
 							<ScalarControl
 								field={sub}
 								bind:value={() => item[sub.key], (next) => (item[sub.key] = next)}

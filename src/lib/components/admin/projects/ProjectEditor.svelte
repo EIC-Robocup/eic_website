@@ -39,7 +39,7 @@
 	import { AdminForm } from '../form.svelte.ts';
 	import { formatDateTime, isoString, timeAgo } from '../sections/time.ts';
 	import { stableStringify } from '../sections/values.ts';
-	import { hintClass, inputClass, monoInputClass, selectTriggerClass, textareaClass } from '../styles.ts';
+	import { hintClass, inputClass, monoInputClass, rowLabelClass, selectTriggerClass, textareaClass } from '../styles.ts';
 	import GalleryEditor from './GalleryEditor.svelte';
 	import PaperField from './PaperField.svelte';
 	import { LIMITS, slugify, validateProject, type ProjectDraft } from './project-form.ts';
@@ -466,6 +466,7 @@
 						{@const titleError = rowError('systems', index, 'title')}
 						{@const descriptionError = rowError('systems', index, 'description')}
 						<div class="flex min-w-0 flex-col gap-1">
+							<span class="{rowLabelClass} sm:hidden" aria-hidden="true">System</span>
 							<Input
 								bind:value={item.title}
 								aria-label="System {index + 1} name"
@@ -477,9 +478,10 @@
 							{#if titleError}<p class={errorText}>{titleError}</p>{/if}
 						</div>
 						<div class="flex min-w-0 flex-col gap-1">
+							<span class="{rowLabelClass} sm:hidden" aria-hidden="true">One line description</span>
 							<Input
 								bind:value={item.description}
-								aria-label="System {index + 1} description"
+								aria-label="System {index + 1} one line description"
 								aria-invalid={descriptionError ? 'true' : undefined}
 								class={inputClass}
 								placeholder="Carbon fiber, AK series actuators."
@@ -520,6 +522,7 @@
 						{@const partError = rowError('parts', index, 'part')}
 						{@const noteError = rowError('parts', index, 'note')}
 						<div class="flex min-w-0 flex-col gap-1">
+							<span class="{rowLabelClass} sm:hidden" aria-hidden="true">Qty</span>
 							<Input
 								bind:value={item.qty}
 								aria-label="Part {index + 1} quantity"
@@ -530,6 +533,7 @@
 							{#if qtyError}<p class={errorText}>{qtyError}</p>{/if}
 						</div>
 						<div class="flex min-w-0 flex-col gap-1">
+							<span class="{rowLabelClass} sm:hidden" aria-hidden="true">Part</span>
 							<Input
 								bind:value={item.part}
 								aria-label="Part {index + 1} name"
@@ -541,6 +545,7 @@
 							{#if partError}<p class={errorText}>{partError}</p>{/if}
 						</div>
 						<div class="col-span-2 flex min-w-0 flex-col gap-1 sm:col-span-1">
+							<span class="{rowLabelClass} sm:hidden" aria-hidden="true">Note</span>
 							<Input
 								bind:value={item.note}
 								aria-label="Part {index + 1} note"
