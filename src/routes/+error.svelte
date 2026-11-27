@@ -20,9 +20,9 @@
 	);
 
 	/*
-	 * Admin errors that reach this page (the sign in page, an unknown /admin/... URL; errors
-	 * inside the panel render in its shell, admin/(app)/+error.svelte) get the sign in page's
-	 * card, not the public drafting hero: the admin has no notes or title blocks.
+	 * Admin errors that reach this page (the sign in page and sign out) get the sign in page's
+	 * card, not the public drafting hero: the admin has no notes or title blocks. Errors inside
+	 * the panel, unknown /admin/... URLs too, render in its shell (admin/(app)/+error.svelte).
 	 */
 	const status = $derived(page.status);
 	const notFound = $derived(status === 404);

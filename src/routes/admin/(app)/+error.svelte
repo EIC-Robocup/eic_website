@@ -1,8 +1,8 @@
 <!--
-	Errors inside the admin panel (a stale /admin/posts/<id>, an unknown page key, a database
-	that does not answer). Renders inside the admin shell, so the sidebar stays: plain admin
-	styling, no drafting hero, graph paper or notes. Errors outside this layout (the sign in
-	page, an unknown /admin/... URL) still reach src/routes/+error.svelte.
+	Errors inside the admin panel (a stale /admin/posts/<id>, an unknown page key, an unknown
+	/admin/... URL through [...rest], a database that does not answer). Renders inside the
+	admin shell, so the sidebar stays: plain admin styling, no drafting hero, graph paper or
+	notes. Errors outside this layout (the sign in page) still reach src/routes/+error.svelte.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
