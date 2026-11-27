@@ -33,11 +33,17 @@ export default defineConfig(({ mode }) => {
 	// The Supabase project whose public "media" bucket Vercel may resize (see src/lib/image.ts).
 	// Read at build time; without SUPABASE_URL nothing is optimized and photos load as they are.
 	let mediaHost = '';
+	let supabaseOrigin = '';
 	try {
-		mediaHost = env.SUPABASE_URL ? new URL(env.SUPABASE_URL).hostname : '';
+		const url = env.SUPABASE_URL ? new URL(env.SUPABASE_URL) : null;
+		mediaHost = url?.hostname ?? '';
+		supabaseOrigin = url?.origin ?? '';
 	} catch {
 		console.warn('SUPABASE_URL is not a URL: media photos will not go through Vercel Image Optimization.');
 	}
+	// A local Supabase (`supabase start`) serves Storage over plain http, which the https: sources
+	// below do not cover. Allow exactly that origin so media photos and uploads work in dev.
+	const httpStorage = (supabaseOrigin.startsWith('http://') ? [supabaseOrigin] : []) as `http://${string}.${string}`[];
 
 	// Vercel Image Optimization for photos in the media bucket, used through optimizedSrc() and
 	// srcset() in src/lib/image.ts (keep `sizes` and `qualities` in sync with IMAGE_WIDTHS and
@@ -94,10 +100,10 @@ export default defineConfig(({ mode }) => {
 							...(appHtmlScriptHashes() as `sha256-${string}`[])
 						],
 						'style-src': ['self', 'unsafe-inline'],
-						'img-src': ['self', 'data:', 'blob:', 'https:'],
-						'media-src': ['self', 'blob:', 'https:'],
+						'img-src': ['self', 'data:', 'blob:', 'https:', ...httpStorage],
+						'media-src': ['self', 'blob:', 'https:', ...httpStorage],
 						'font-src': ['self', 'data:'],
-						'connect-src': ['self', 'https:'],
+						'connect-src': ['self', 'https:', ...httpStorage],
 						'worker-src': ['self', 'blob:'],
 						'frame-src': ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
 						'object-src': ['none'],
