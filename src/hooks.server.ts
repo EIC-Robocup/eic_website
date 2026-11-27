@@ -1,4 +1,4 @@
-import { sequence, type Handle } from '@sveltejs/kit/hooks';
+import { sequence, type Handle, type HandleServerError } from '@sveltejs/kit/hooks';
 
 import { dev } from '$app/env';
 import { DEV_AUTH_EMAIL, VERCEL_ENV } from '$app/env/private';
@@ -101,8 +101,10 @@ const SHARED_ROUTES = new Set(['/rss.xml', '/sitemap.xml']);
  * copy for ten more while it refreshes, so most views run no function and no queries. Editors'
  * changes show on the site within about a minute. Only a response that is safe to share gets
  * this: a GET or HEAD answered 200 on a public route, with no cookie and no cache header of its
- * own. The one exception is Kit's `private, no-store` on __data.json, which it sets because a
- * load might read cookies: no (site) load does, and hover preloads fetch these. /about's
+ * own, and no load on it failed with a server error (`locals.serverError`, set by handleError
+ * below: Kit answers __data.json 200 even when a load threw, with the error inside). The one
+ * exception is Kit's `private, no-store` on __data.json, which it sets because a load might
+ * read cookies: no (site) load does, and hover preloads fetch these. /about's
  * contact form token stays valid in a cached page: it must be at least 3 seconds and at most
  * 24 hours old, and a cached copy is at most 11 minutes old.
  */
@@ -113,6 +115,7 @@ const publicCache: Handle = async ({ event, resolve }) => {
 	if (
 		(method === 'GET' || method === 'HEAD') &&
 		response.status === 200 &&
+		!event.locals.serverError &&
 		(routeId.startsWith('/(site)') || SHARED_ROUTES.has(routeId)) &&
 		!response.headers.has('set-cookie') &&
 		(!response.headers.has('cache-control') ||
@@ -136,3 +139,17 @@ const securityHeaders: Handle = async ({ event, resolve }) => {
 };
 
 export const handle = sequence(securityHeaders, publicCache, authFallback, supabase, admin);
+
+/**
+ * Marks a request whose load (or endpoint) failed with a server error, so publicCache never
+ * shares the answer. This replaces Kit's default handleError, so it logs unknown errors the
+ * way Kit does; app and framework errors (404s and the like) are not logged, as before.
+ */
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+	if (kind === 'unknown') {
+		event.locals.serverError = true;
+		console.error(error);
+	} else if (kind !== 'validation' && error.status >= 500) {
+		event.locals.serverError = true;
+	}
+};
