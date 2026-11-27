@@ -5,7 +5,7 @@
 	(the dialog closes) or `redirect(303, '/admin/posts')` (the page moves on).
 
 	<ConfirmDelete action="?/delete" id={post.id} title="Delete this post?"
-		description="It disappears from the blog straight away. This can't be undone."
+		description="It is removed from the blog within a minute. This can't be undone."
 		triggerLabel="Delete post" />
 
 	<ConfirmDelete action="?/deletePerson" id={person.id} title="Remove {person.name}?" variant="outline">
@@ -30,7 +30,7 @@
 		fields?: Record<string, string>;
 		/** Dialog heading, e.g. "Delete this post?". */
 		title: string;
-		/** What happens, e.g. "It disappears from the site straight away. This can't be undone." */
+		/** What happens, e.g. "It is removed from the site within a minute. This can't be undone." */
 		description?: string;
 		/** Text on the button that opens the dialog. */
 		triggerLabel?: string;

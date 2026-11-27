@@ -174,7 +174,7 @@
 				Remove {removedCount === 1 ? `1 ${noun[0]}` : `${removedCount} ${noun[1]}`}?
 			</AlertDialog.Title>
 			<AlertDialog.Description class="text-sm leading-[22px] text-ink-muted">
-				Saving deletes {removedCount === 1 ? 'it' : 'them'} from the site straight away. This can't be undone.
+				Saving removes {removedCount === 1 ? 'it' : 'them'} from the site within a minute. This can't be undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>

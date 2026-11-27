@@ -222,7 +222,7 @@
 	const headerTitle = $derived(draft.title.trim() || saved?.title || 'New project');
 	const deleteDescription = $derived(
 		[
-			'It disappears from the website straight away.',
+			'It is removed from the website within a minute.',
 			linkedPosts === 1
 				? 'The post linked to it stays on the blog, without a project.'
 				: linkedPosts > 1

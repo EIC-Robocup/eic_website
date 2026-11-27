@@ -280,7 +280,7 @@
 					action="?/delete"
 					id={draft.id}
 					title="Remove {draft.name || 'this person'}?"
-					description="They disappear from the People page straight away. To keep them as a former member, set Listed as to Alumni instead. This can't be undone."
+					description="They leave the People page within a minute. To keep them as a former member, set Listed as to Alumni instead. This can't be undone."
 					triggerLabel="Remove"
 					confirmLabel="Remove"
 					variant="outline"

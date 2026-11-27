@@ -55,7 +55,7 @@ export const actions = {
 		const name = await deletePerson(id);
 		if (!name) return fail(404, { message: 'This person was already removed.' });
 		await logActivity(editor, { entityType: 'person', entityId: id, label: name, action: 'deleted' });
-		return { message: `${name} removed from the site.`, deleted: id };
+		return { message: `${name} removed. They leave the site within a minute.`, deleted: id };
 	},
 
 	/** Move a person one place within their team (or the advisors, or the alumni): `target=<id>:up`. */

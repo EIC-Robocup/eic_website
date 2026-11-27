@@ -67,7 +67,9 @@ export const actions = {
 		if (!title) return fail(404, { message: 'That project no longer exists. Reload the page.' });
 		await logActivity(editor, { entityType: 'project', entityId: id, label: title, action: featured ? 'featured' : 'unfeatured' });
 		return {
-			message: featured ? `${title} is now the featured project on the home page.` : `${title} is no longer featured.`,
+			message: featured
+				? `${title} is now the featured project. It shows on the home page within a minute.`
+				: `${title} is no longer featured.`,
 			featured: id
 		};
 	}

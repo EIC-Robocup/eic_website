@@ -419,9 +419,9 @@ export async function savePost(
 
 	const future = nowLive && values.publishedAt && values.publishedAt.getTime() > Date.now();
 	let message: string;
-	if (!nowLive) message = id && wasPublished ? 'Moved back to drafts. It is no longer on the blog.' : 'Draft saved.';
+	if (!nowLive) message = id && wasPublished ? 'Moved back to drafts. It leaves the blog within a minute.' : 'Draft saved.';
 	else if (future) message = 'Scheduled. It goes live on its publish date.';
-	else if (!wasPublished) message = 'Published. It is on the blog now.';
+	else if (!wasPublished) message = 'Published. It shows on the blog within a minute.';
 	else message = 'Post updated.';
 	if (unfeatured) message += ` It replaces “${unfeatured}” as the featured post.`;
 

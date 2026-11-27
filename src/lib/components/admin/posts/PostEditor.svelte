@@ -727,7 +727,7 @@
 					action="?/delete"
 					id={data.post.id}
 					title="Delete this post?"
-					description={`“${data.post.title}” disappears from the blog straight away. This can't be undone.`}
+					description={`“${data.post.title}” is removed from the blog within a minute. This can't be undone.`}
 					triggerLabel="Delete post"
 				/>
 			{/if}
