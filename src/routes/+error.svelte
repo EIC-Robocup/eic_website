@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { pages } from '#lib/content/sections.ts';
+	import AdminButton from '#lib/components/admin/AdminButton.svelte';
+	import AuthCard from '#lib/components/admin/AuthCard.svelte';
 	import ErrorView from '#lib/components/site/ErrorView.svelte';
 	import SiteShell from '#lib/components/site/SiteShell.svelte';
 
@@ -16,12 +18,40 @@
 	const isAdmin = $derived(
 		page.url.pathname === '/admin' || page.url.pathname.startsWith('/admin/')
 	);
+
+	/*
+	 * Admin errors that reach this page (the sign in page, an unknown /admin/... URL; errors
+	 * inside the panel render in its shell, admin/(app)/+error.svelte) get the sign in page's
+	 * card, not the public drafting hero: the admin has no notes or title blocks.
+	 */
+	const status = $derived(page.status);
+	const notFound = $derived(status === 404);
+	const adminLine = $derived(
+		notFound
+			? 'The link may be old, or the page has moved. Start again from the dashboard.'
+			: status >= 500
+				? 'We could not load this page. Try again in a moment.'
+				: (page.error?.message ?? 'We could not load this page.')
+	);
 </script>
 
+<svelte:head>
+	{#if isAdmin}
+		<title>{notFound ? 'Page not found' : 'Error'} · EIC Admin</title>
+		<meta name="robots" content="noindex, nofollow" />
+	{/if}
+</svelte:head>
+
 {#if isAdmin}
-	<main id="main" class="min-h-dvh">
-		<ErrorView />
-	</main>
+	<AuthCard title={notFound ? 'Page not found' : 'Something went wrong'} description={adminLine}>
+		<div class="flex flex-wrap gap-2.5">
+			<AdminButton href="/admin">Back to the dashboard</AdminButton>
+			{#if status >= 500}
+				<AdminButton variant="outline" onclick={() => location.reload()}>Try again</AdminButton>
+			{/if}
+		</div>
+		{#snippet footer()}Error {status}{/snippet}
+	</AuthCard>
 {:else}
 	<SiteShell {cta} {footer}>
 		<ErrorView />
