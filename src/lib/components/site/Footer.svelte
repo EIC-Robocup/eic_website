@@ -1,13 +1,13 @@
 <!--
-	Site footer: ruler strip, the faint line drawing of Engineering Building 1, the logo
-	and tagline, Explore / Follow / Visit columns, then the copyright, Thai name and
+	Site footer: ruler strip, the faint line drawing of Engineering Building 1, the EIC
+	mark and tagline, Explore / Follow / Visit columns, then the copyright, Thai name and
 	coordinates. Reads the site.footer section.
 -->
 <script lang="ts">
 	import type { SectionData } from '#lib/content/sections.ts';
 	import { currentYear } from './format.ts';
 	import { NAV_LINKS } from './links.ts';
-	import logo from './assets/eic-logo-128.webp';
+	import EicMark from './EicMark.svelte';
 	import building from './assets/building-1-line.webp';
 
 	type Props = { data: SectionData<'site', 'footer'> };
@@ -44,14 +44,9 @@
 				<a
 					href="/"
 					aria-label="EIC Chula home"
-					class="flex items-center gap-3.5 self-start text-ink no-underline"
+					class="flex min-h-11 items-center self-start text-ink no-underline"
 				>
-					<span class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-ink">
-						<img src={logo} alt="" width="58" height="58" loading="lazy" class="block size-[58px]" />
-					</span>
-					<span class="font-display text-2xl leading-8 font-semibold tracking-[-0.02em] whitespace-nowrap"
-						>EIC <span class="font-medium text-ink-muted">Chula</span></span
-					>
+					<EicMark class="h-10 w-auto shrink-0" />
 				</a>
 				{#if data.tagline}
 					<p class="m-0 text-sm leading-[22px] text-ink-muted">{data.tagline}</p>

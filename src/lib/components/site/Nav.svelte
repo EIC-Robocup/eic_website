@@ -1,5 +1,5 @@
 <!--
-	Sticky site navigation: logo badge and wordmark, the section links (the current one
+	Sticky site navigation: the EIC mark, the section links (the current one
 	marked with a 2px brand underline) and the red call to action. Below 768px the links
 	and the button move into a menu: a shadcn Sheet that drops from the top and repeats the
 	bar, so it looks like the bar opening. It closes on navigation, Escape and a tap outside.
@@ -17,7 +17,7 @@
 	import ButtonLink from './ButtonLink.svelte';
 	import { focusedIndex, refocus, useHydrated } from './hydrated.svelte.ts';
 	import { NAV_LINKS, isActivePath } from './links.ts';
-	import logo from './assets/eic-logo-128.webp';
+	import EicMark from './EicMark.svelte';
 
 	type Props = {
 		/** The red button (site.nav section's `cta`). */
@@ -72,13 +72,8 @@
 </script>
 
 {#snippet brand()}
-	<a href="/" aria-label="EIC Chula home" class="flex min-h-11 items-center gap-3 text-ink no-underline">
-		<span class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-ink">
-			<img src={logo} alt="" width="40" height="40" class="block size-10" />
-		</span>
-		<span class="font-display text-[22px] leading-7 font-semibold tracking-[-0.02em] whitespace-nowrap"
-			>EIC <span class="font-medium text-ink-muted">Chula</span></span
-		>
+	<a href="/" aria-label="EIC Chula home" class="flex min-h-11 items-center text-ink no-underline">
+		<EicMark class="h-7 w-auto shrink-0" />
 	</a>
 {/snippet}
 
