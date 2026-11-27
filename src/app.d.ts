@@ -18,8 +18,8 @@ declare global {
 			getUser(): Promise<AuthUser | null>;
 			/** The invited editor on /admin routes, otherwise null. */
 			editor: SessionEditor | null;
-			/** Set by handleError when a load failed with a 5xx, so the answer is never cached. */
-			serverError?: boolean;
+			/** Set by handleError when a load threw (a 404 or a 5xx), so the CDN never shares the answer. */
+			uncacheable?: boolean;
 		}
 
 		// interface Error {}

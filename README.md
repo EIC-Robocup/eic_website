@@ -119,8 +119,9 @@ hook in `src/hooks.server.ts`). Vercel's CDN serves a copy for 60 seconds withou
 site's function or any query, then may serve it once more while it fetches a new one (for up
 to 10 minutes). So editors' changes show within about a minute; a new deployment starts with
 an empty cache. Only a GET or HEAD answered 200 on a `(site)` route, with no `set-cookie`, is
-cached, and not when one of its loads failed with a server error (Kit still answers a
-`__data.json` 200 then, with the error inside). `/about` is not cached either: its contact
+cached, and not when one of its loads threw an error, a missing post's 404 as much as a server
+error (Kit still answers a `__data.json` 200 then, with the error inside, and a shared "Post not
+found" would hide a post published a moment later). `/about` is not cached either: its contact
 form carries a token that must be at least 3 seconds old when the form is sent, and a shared
 copy would hand every visitor an old one. Nothing else is: the admin panel and sign in are
 `private, no-store`, and Vercel's CDN doesn't keep responses without `s-maxage` (`/auth/*`,
