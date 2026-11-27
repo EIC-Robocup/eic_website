@@ -192,7 +192,8 @@ behaviour is no surprise.
   or the database. After that, it may serve the old copy once more while it fetches a new one
   (for up to 10 minutes). So a change saved in the admin panel shows on the site within about
   a minute; reload once more if it hasn't. A new deployment starts with an empty cache. The
-  admin panel and sign in are never cached.
+  admin panel, sign in and the About page (its contact form needs a fresh copy for each
+  visitor) are never cached.
 - **Content-Security-Policy.** The site tells browsers where a page may load things from.
   Scripts, styles and fonts come only from the site itself. Posts can show images, videos and
   3D models from any `https://` address. The only embedded players allowed are YouTube and

@@ -97,6 +97,13 @@ const authFallback: Handle = async ({ event, resolve }) => {
 const SHARED_ROUTES = new Set(['/rss.xml', '/sitemap.xml']);
 
 /**
+ * (site) routes that are never shared. /about: its contact form carries a token minted for each
+ * render, which must be at least 3 seconds old when the form is sent (bots post at once). A
+ * shared copy would hand every visitor a token minted up to 11 minutes earlier.
+ */
+const UNSHARED_ROUTES = new Set(['/(site)/about']);
+
+/**
  * Let Vercel's CDN keep public pages (and their __data.json) for a minute and serve a stale
  * copy for ten more while it refreshes, so most views run no function and no queries. Editors'
  * changes show on the site within about a minute. Only a response that is safe to share gets
@@ -104,9 +111,8 @@ const SHARED_ROUTES = new Set(['/rss.xml', '/sitemap.xml']);
  * own, and no load on it failed with a server error (`locals.serverError`, set by handleError
  * below: Kit answers __data.json 200 even when a load threw, with the error inside). The one
  * exception is Kit's `private, no-store` on __data.json, which it sets because a load might
- * read cookies: no (site) load does, and hover preloads fetch these. /about's
- * contact form token stays valid in a cached page: it must be at least 3 seconds and at most
- * 24 hours old, and a cached copy is at most 11 minutes old.
+ * read cookies: no (site) load does, and hover preloads fetch these. /about is left out
+ * (UNSHARED_ROUTES).
  */
 const publicCache: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
@@ -116,7 +122,7 @@ const publicCache: Handle = async ({ event, resolve }) => {
 		(method === 'GET' || method === 'HEAD') &&
 		response.status === 200 &&
 		!event.locals.serverError &&
-		(routeId.startsWith('/(site)') || SHARED_ROUTES.has(routeId)) &&
+		((routeId.startsWith('/(site)') && !UNSHARED_ROUTES.has(routeId)) || SHARED_ROUTES.has(routeId)) &&
 		!response.headers.has('set-cookie') &&
 		(!response.headers.has('cache-control') ||
 			(event.isDataRequest && response.headers.get('cache-control') === 'private, no-store'))

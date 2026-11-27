@@ -75,9 +75,10 @@ load the pages that use it.
 
 ## Caching, CSP and limits
 
-- Public pages are shared by Vercel's CDN for 60 s (`publicCache` in `hooks.server.ts`). A
-  `(site)` load must never read `locals.user`, `locals.editor`, cookies or anything else per
-  visitor, or one visitor's page is served to everyone. Editors' changes show within a minute.
+- Public pages are shared by Vercel's CDN for 60 s (`publicCache` in `hooks.server.ts`), all
+  but `/about`, whose contact form token must be fresh. A `(site)` load must never read
+  `locals.user`, `locals.editor`, cookies or anything else per visitor, or one visitor's page
+  is served to everyone. Editors' changes show within a minute.
 - The Content-Security-Policy is in `vite.config.ts` (`csp`, hash mode). A new embed provider
   needs its player origin in `frame-src` (plus `markdown/embeds.ts`, `markdown/sanitize.ts`
   and `site/post-enhance.ts`); an outside script, style or font needs `script-src`,

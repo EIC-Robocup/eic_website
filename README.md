@@ -120,9 +120,11 @@ site's function or any query, then may serve it once more while it fetches a new
 to 10 minutes). So editors' changes show within about a minute; a new deployment starts with
 an empty cache. Only a GET or HEAD answered 200 on a `(site)` route, with no `set-cookie`, is
 cached, and not when one of its loads failed with a server error (Kit still answers a
-`__data.json` 200 then, with the error inside). Nothing else is: the admin panel and sign in
-are `private, no-store`, and Vercel's CDN doesn't keep responses without `s-maxage`
-(`/auth/*`, `/api/health`).
+`__data.json` 200 then, with the error inside). `/about` is not cached either: its contact
+form carries a token that must be at least 3 seconds old when the form is sent, and a shared
+copy would hand every visitor an old one. Nothing else is: the admin panel and sign in are
+`private, no-store`, and Vercel's CDN doesn't keep responses without `s-maxage` (`/auth/*`,
+`/api/health`).
 
 Because of this, **no `(site)` load may read `locals.user`, `locals.editor` or cookies**: the
 CDN would hand one visitor's page to everyone.
