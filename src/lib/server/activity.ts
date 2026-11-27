@@ -1,6 +1,7 @@
 import { db } from './db';
 import { activity } from './db/schema';
 import type { SessionEditor } from './auth';
+import { clip } from '#lib/utils.js';
 
 export type ActivityInput = {
 	/** e.g. 'post', 'project', 'person', 'page', 'achievement', 'media', 'editor' */
@@ -18,7 +19,7 @@ export async function logActivity(editor: SessionEditor | null, input: ActivityI
 		await db.insert(activity).values({
 			entityType: input.entityType,
 			entityId: input.entityId ?? null,
-			label: input.label.slice(0, 300),
+			label: clip(input.label, 300),
 			action: input.action,
 			actorEmail: editor?.email ?? null,
 			actorName: editor?.name ?? editor?.email ?? null

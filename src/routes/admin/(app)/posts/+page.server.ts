@@ -6,6 +6,7 @@ import { logActivity } from '#lib/server/activity.ts';
 import { requireEditor } from '#lib/server/auth.ts';
 import { db } from '#lib/server/db/index.ts';
 import { posts } from '#lib/server/db/schema.ts';
+import { clip } from '#lib/utils.js';
 import { isUuid } from './posts.server.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -48,7 +49,7 @@ export const actions = {
 		const [source] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
 		if (!source) return fail(404, { message: 'That post no longer exists.' });
 
-		const title = `Copy of ${source.title}`.slice(0, LIMITS.title);
+		const title = clip(`Copy of ${source.title}`, LIMITS.title);
 		const [created] = await db
 			.insert(posts)
 			.values({

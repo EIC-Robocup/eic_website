@@ -18,6 +18,7 @@ import {
 } from '#lib/components/admin/lists/rows.ts';
 import { db } from '#lib/server/db/index.ts';
 import { achievements, archivePhotos, publications, sponsors } from '#lib/server/db/schema.ts';
+import { clip } from '#lib/utils.js';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Runner = Tx | typeof db;
@@ -143,7 +144,7 @@ export const LIST_META: {
 		title: 'Archive photos',
 		entityType: 'archive',
 		one: 'photo',
-		label: (p) => p.caption || (p.alt.length > 60 ? `${p.alt.slice(0, 57)}...` : p.alt) || 'Archive photo'
+		label: (p) => p.caption || (p.alt.length > 60 ? `${clip(p.alt, 57)}...` : p.alt) || 'Archive photo'
 	},
 	sponsors: { title: 'Sponsors', entityType: 'sponsor', one: 'sponsor', label: (sp) => sp.name },
 	publications: { title: 'Publications', entityType: 'publication', one: 'paper', label: (p) => p.title }
