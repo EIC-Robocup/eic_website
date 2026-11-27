@@ -586,7 +586,7 @@
 				bind:mode={editorMode}
 				bind:uploading={uploadingBody}
 				name="body"
-				figureStart={f.coverUrl ? 2 : 1}
+				figureStart={2}
 				error={save.errors.body}
 				{savedLabel}
 			/>
@@ -698,13 +698,12 @@
 					bind:alt={f.coverAlt}
 					bind:uploading={uploadingCover}
 				/>
-				{#if f.coverUrl}
-					<FormField label="Cover caption" optional error={save.errors.coverCaption} hint="Shown under the cover as Fig. 01.">
-						{#snippet children(attrs)}
-							<Input {...attrs} name="coverCaption" bind:value={f.coverCaption} maxlength={LIMITS.caption} class={inputClass} />
-						{/snippet}
-					</FormField>
-				{/if}
+				<!-- The cover slot is always on the post (a placeholder until there is a photo), so its caption is too. -->
+				<FormField label="Cover caption" optional error={save.errors.coverCaption} hint="Shown under the cover as Fig. 01.">
+					{#snippet children(attrs)}
+						<Input {...attrs} name="coverCaption" bind:value={f.coverCaption} maxlength={LIMITS.caption} class={inputClass} />
+					{/snippet}
+				</FormField>
 
 				<FormField label="Linked project" optional error={save.errors.projectId} hint="The post shows on the project's page.">
 					{#snippet children(attrs)}

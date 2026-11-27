@@ -19,8 +19,10 @@
 
 	The textarea submits as `name`. Ctrl/Cmd+S is left to the page (it saves the whole form).
 
-	<MarkdownEditor name="body" bind:value={body} bind:uploading figureStart={coverUrl ? 2 : 1}
+	<MarkdownEditor name="body" bind:value={body} bind:uploading figureStart={2}
 		savedLabel="Saved 2 min ago" />
+
+	Posts pass figureStart={2}: the cover slot is Fig. 01 whether or not it has a photo.
 -->
 <script lang="ts" module>
 	export type EditorMode = 'write' | 'preview' | 'split';
