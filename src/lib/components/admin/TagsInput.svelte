@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
 	import XIcon from '@lucide/svelte/icons/x';
+	import { clip } from '#lib/utils.js';
 
 	type Props = {
 		/** The tags. Bindable. */
@@ -58,7 +59,7 @@
 	function commit(raw: string): boolean {
 		const parts = raw
 			.split(',')
-			.map((t) => t.trim().replace(/\s+/g, ' ').slice(0, maxLength))
+			.map((t) => clip(t.trim().replace(/\s+/g, ' '), maxLength))
 			.filter(Boolean);
 		if (!parts.length) return false;
 		const next = [...tags];

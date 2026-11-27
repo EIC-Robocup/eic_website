@@ -6,6 +6,16 @@ import { clsx, cn as merge, type ClassValue } from 'cn';
  */
 const KEEP = /(^|:)(text-label|text-spec)$/;
 
+/**
+ * `value` cut to at most `max` UTF-16 units without splitting a surrogate pair (an emoji, say).
+ * Use it instead of `.slice(0, max)` on anything that is saved: Postgres refuses half a pair in
+ * jsonb, so a plain slice through an emoji turns a save into a 500.
+ */
+export function clip(value: string, max: number): string {
+	const out = value.slice(0, max);
+	return /[\uD800-\uDBFF]$/.test(out) ? out.slice(0, -1) : out;
+}
+
 /** Merge Tailwind classes (clsx + tailwind-merge), keeping the EIC custom utilities. */
 export function cn(...inputs: ClassValue[]): string {
 	const tokens = clsx(...inputs)

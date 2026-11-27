@@ -16,6 +16,7 @@ import {
 import { storageConfigured } from '#lib/server/supabase.ts';
 import { parseSubmittedJson } from '#lib/components/admin/form-data.ts';
 import { UPLOAD_FOLDERS } from '#lib/components/admin/upload.ts';
+import { clip } from '#lib/utils.js';
 import type { RequestHandler } from './$types';
 
 const NO_STORE = { 'cache-control': 'no-store' };
@@ -67,8 +68,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	const path = typeof body.path === 'string' ? body.path : '';
-	const filename = (typeof body.filename === 'string' ? body.filename.trim() : '').slice(0, 300) || path.split('/').pop() || 'file';
-	const alt = (typeof body.alt === 'string' ? body.alt.trim() : '').slice(0, 300);
+	const filename = clip(typeof body.filename === 'string' ? body.filename.trim() : '', 300) || path.split('/').pop() || 'file';
+	const alt = clip(typeof body.alt === 'string' ? body.alt.trim() : '', 300);
 	const width = readDimension(body.width);
 	const height = readDimension(body.height);
 

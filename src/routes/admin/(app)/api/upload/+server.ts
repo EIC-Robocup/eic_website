@@ -14,6 +14,7 @@ import {
 import { storageConfigured } from '#lib/server/supabase.ts';
 import { parseSubmittedJson, stripNul } from '#lib/components/admin/form-data.ts';
 import { UPLOAD_FOLDERS } from '#lib/components/admin/upload.ts';
+import { clip } from '#lib/utils.js';
 import type { RequestHandler } from './$types';
 
 const NO_STORE = { 'cache-control': 'no-store' };
@@ -125,7 +126,7 @@ async function multipartUpload(request: Request, editor: SessionEditor): Promise
 	const file = form.get('file');
 	const folder = String(form.get('folder') ?? '');
 	const altRaw = form.get('alt');
-	const alt = typeof altRaw === 'string' ? stripNul(altRaw).trim().slice(0, 300) : '';
+	const alt = typeof altRaw === 'string' ? clip(stripNul(altRaw).trim(), 300) : '';
 
 	if (!(UPLOAD_FOLDERS as readonly string[]).includes(folder)) {
 		return problem(400, `Unknown upload folder. Use one of: ${UPLOAD_FOLDERS.join(', ')}.`);
@@ -148,7 +149,7 @@ async function multipartUpload(request: Request, editor: SessionEditor): Promise
 			.values({
 				path: uploaded.path,
 				url: uploaded.url,
-				filename: stripNul(uploaded.filename).slice(0, 300),
+				filename: clip(stripNul(uploaded.filename), 300),
 				mimeType: uploaded.mimeType,
 				size: uploaded.size,
 				alt,

@@ -1,3 +1,5 @@
+import { clip } from '#lib/utils.js';
+
 /**
  * Server helpers for reading what the admin building blocks submit. Plain functions with no
  * server imports, so they run in form actions (and in tests). They only parse and trim;
@@ -13,11 +15,14 @@
  */
 
 /**
- * `value` without NUL characters. Postgres refuses U+0000 in text and jsonb, so one pasted
- * from a PDF would otherwise turn a save into a 500. Every reader here applies it.
+ * `value` without NUL characters, and with any lone surrogate (half an emoji) replaced by
+ * U+FFFD. Postgres refuses U+0000 in text and jsonb, and a lone surrogate in jsonb, so either
+ * one pasted or sent would otherwise turn a save into a 500. Every reader here applies it, and
+ * cuts with `clip` so it never makes a lone surrogate itself.
  */
 export function stripNul(value: string): string {
-	return value.includes('\u0000') ? value.replace(/\u0000/g, '') : value;
+	const clean = value.includes('\u0000') ? value.replace(/\u0000/g, '') : value;
+	return clean.isWellFormed() ? clean : clean.toWellFormed();
 }
 
 /**
@@ -39,7 +44,7 @@ export function parseSubmittedJson(raw: string): unknown {
 /** A trimmed string ('' when missing). */
 export function readText(form: FormData, name: string, { max = 10_000 }: { max?: number } = {}): string {
 	const value = form.get(name);
-	return typeof value === 'string' ? stripNul(value).trim().slice(0, max) : '';
+	return typeof value === 'string' ? clip(stripNul(value).trim(), max) : '';
 }
 
 /** A trimmed string, or null when empty. For nullable text columns. */
@@ -66,7 +71,7 @@ export function readTags(form: FormData, name: string, { max = 30, maxLength = 4
 	const tags: string[] = [];
 	for (const raw of form.getAll(name)) {
 		if (typeof raw !== 'string') continue;
-		const tag = stripNul(raw).trim().replace(/\s+/g, ' ').slice(0, maxLength);
+		const tag = clip(stripNul(raw).trim().replace(/\s+/g, ' '), maxLength);
 		if (!tag || seen.has(tag.toLowerCase())) continue;
 		seen.add(tag.toLowerCase());
 		tags.push(tag);
@@ -130,7 +135,7 @@ export function readRows<K extends string>(
 		let filled = false;
 		for (const key of keys) {
 			const raw = (item as Record<string, unknown>)[key];
-			const text = typeof raw === 'string' || typeof raw === 'number' ? stripNul(String(raw)).trim().slice(0, maxLength) : '';
+			const text = typeof raw === 'string' || typeof raw === 'number' ? clip(stripNul(String(raw)).trim(), maxLength) : '';
 			row[key] = text;
 			if (text) filled = true;
 		}

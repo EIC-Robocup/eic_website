@@ -10,6 +10,8 @@
  * (see `fill`).
  */
 
+import { clip } from '#lib/utils.js';
+
 export type SelectOption = { value: string; label: string };
 
 export type ScalarField = {
@@ -494,8 +496,9 @@ export function getSectionDef(page: PageKey, key: string): SectionDef | undefine
 const isRecord = (v: unknown): v is Record<string, unknown> =>
 	typeof v === 'object' && v !== null && !Array.isArray(v);
 
+// clip, not slice: half an emoji makes the jsonb write fail.
 const str = (v: unknown, fallback: string, max = 2000): string =>
-	typeof v === 'string' ? v.slice(0, max) : fallback;
+	typeof v === 'string' ? clip(v, max) : fallback;
 
 /** Allow only http(s), mailto, tel, site-relative paths and in-page anchors. */
 export function safeHref(v: string): string {
@@ -532,7 +535,7 @@ function coerceScalar(field: ScalarField, value: unknown, fallback: unknown): un
 		case 'toggle':
 			return typeof value === 'boolean' ? value : Boolean(fallback);
 		case 'url':
-			return typeof value === 'string' ? safeHref(value.slice(0, 2000)) : fallback;
+			return typeof value === 'string' ? safeHref(clip(value, 2000)) : fallback;
 		case 'text':
 			return str(value, String(fallback ?? ''), 500);
 		case 'textarea':
@@ -547,14 +550,14 @@ function coerceField(field: Field, value: unknown, fallback: unknown): unknown {
 			if (!isRecord(value)) return fb;
 			return {
 				label: str(value.label, fb.label, 200),
-				href: typeof value.href === 'string' ? safeHref(value.href.slice(0, 2000)) : fb.href
+				href: typeof value.href === 'string' ? safeHref(clip(value.href, 2000)) : fb.href
 			};
 		}
 		case 'image': {
 			const fb = (isRecord(fallback) ? fallback : { url: '', alt: '' }) as ImageValue;
 			if (!isRecord(value)) return fb;
 			return {
-				url: typeof value.url === 'string' ? safeHref(value.url.slice(0, 2000)) : fb.url,
+				url: typeof value.url === 'string' ? safeHref(clip(value.url, 2000)) : fb.url,
 				alt: str(value.alt, fb.alt, 500)
 			};
 		}
@@ -562,7 +565,7 @@ function coerceField(field: Field, value: unknown, fallback: unknown): unknown {
 			if (!Array.isArray(value)) return fallback;
 			return value
 				.filter((t): t is string => typeof t === 'string')
-				.map((t) => t.trim().slice(0, 60))
+				.map((t) => clip(t.trim(), 60))
 				.filter(Boolean)
 				.slice(0, 20);
 		}
