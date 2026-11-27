@@ -175,8 +175,8 @@ export const actions = {
 		return {
 			message:
 				names.length === 1
-					? `Published. ${names[0]} is live.`
-					: `Published ${names.length} sections. They are live now.`
+					? `Published. ${names[0]} shows on the site within a minute.`
+					: `Published ${names.length} sections. They show on the site within a minute.`
 		};
 	},
 

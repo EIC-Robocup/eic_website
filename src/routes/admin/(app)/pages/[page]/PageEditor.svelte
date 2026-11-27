@@ -226,7 +226,7 @@
 
 		<div class="flex flex-wrap items-center justify-end gap-3">
 			{#if dirty}
-				<span class="text-[13px] text-ink-muted">Changes go live as soon as you publish.</span>
+				<span class="text-[13px] text-ink-muted">Changes show on the site within a minute of publishing.</span>
 			{/if}
 			<AdminButton
 				type="button"
