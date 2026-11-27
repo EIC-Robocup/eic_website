@@ -4,18 +4,19 @@ The website of the Engineering Innovator Club (EIC), Chulalongkorn University: t
 robotics team behind Walkie and our RoboCup@Home entries. Live at https://eicchula.club.
 
 - **Public site**: Home, Projects, project pages, People, Blog, About (achievements, archive,
-  join, contact).
+  join, contact), plus an RSS feed at `/rss.xml` and `/sitemap.xml`.
 - **Admin panel** at `/admin`: editors sign in with GitHub, Google or an email link (invited
   accounts only) and edit everything the site shows: page sections, projects, posts, people,
   achievements, archive photos, sponsors, papers and media. Contact form messages land in the
   admin inbox. Posts are Markdown stored in the database, so publishing needs no redeploy.
+  Saved changes show on the public site within about a minute (see "Caching" below).
 
 ## Stack
 
 | Part | Choice |
 | --- | --- |
 | Framework | SvelteKit 3, Svelte 5, TypeScript |
-| Styling | Tailwind CSS 4 with the EIC Chula design tokens, shadcn-svelte for the admin |
+| Styling | Tailwind CSS 4 with the EIC Chula design tokens, shadcn-svelte components on the site and in the admin |
 | Database | Postgres on Supabase, schema and migrations with Drizzle |
 | Auth and files | Supabase Auth (GitHub, Google, email link) and Supabase Storage |
 | Hosting | Vercel (Singapore region) |
@@ -30,19 +31,28 @@ cp .env.example .env      # fill in the values, see the comments in the file
 pnpm dev
 ```
 
-For a database on your machine, either run Supabase locally with Docker
-(`pnpm dlx supabase@3 start`) or start a plain Postgres with `scripts/local-db.sh start`, then:
+For a database on your machine, pick one:
 
-```bash
-pnpm db:migrate
-pnpm db:seed
-```
+- **Plain Postgres, no Docker.** It needs Postgres 16; set `PG_BIN` if its programs are not in
+  `/usr/lib/postgresql/16/bin`. Run `scripts/local-db.sh start`, put the URL that
+  `scripts/local-db.sh url` prints into `.env` as `DATABASE_URL`
+  (`postgres://postgres:postgres@127.0.0.1:54329/postgres`), then run
+  `pnpm db:migrate && pnpm db:seed`.
+- **Full Supabase, with Docker:** `pnpm dlx supabase@3 start`. It applies the migrations and
+  `supabase/seed.sql` itself, so skip `pnpm db:seed`. Put
+  `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres`,
+  `SUPABASE_URL=http://127.0.0.1:54321` and the keys it prints into `.env`.
 
-Set `DEV_AUTH_EMAIL` in `.env` to use the admin panel locally without signing in.
+To use the admin panel locally without signing in, set `DEV_AUTH_EMAIL` and `ADMIN_EMAILS` to
+the same address in `.env` (for example `you@example.com`). `ADMIN_EMAILS` makes that address
+an owner on a fresh database, which has no editors. `DEV_AUTH_EMAIL` only works in `pnpm dev`.
 
 ## Setting up production
 
-1. [Set up Supabase](docs/setup-supabase.md): project, GitHub integration, sign in providers.
+Do these in order:
+
+1. [Set up Supabase](docs/setup-supabase.md): project, GitHub integration, merging `feat/v1`
+   into `main`, starter content, sign in providers.
 2. [Set up Vercel](docs/setup-vercel.md): import the repo, environment variables, domain.
 
 ## Scripts
@@ -50,12 +60,19 @@ Set `DEV_AUTH_EMAIL` in `.env` to use the admin panel locally without signing in
 | Command | What it does |
 | --- | --- |
 | `pnpm dev` | Dev server on http://localhost:5173 |
-| `pnpm check` | Type check (svelte-check) |
+| `pnpm check` | Type check (svelte-check). Must end with 0 errors |
+| `pnpm check:watch` | Type check in watch mode |
 | `pnpm build` / `pnpm preview` | Production build and local preview |
+| `pnpm preview:vercel` | Preview the production build the way Vercel runs it (no `require()` of ES modules). Run it after adding a server dependency |
 | `pnpm db:generate` | Write a migration for changes to `src/lib/server/db/schema.ts` |
-| `pnpm db:migrate` | Apply pending migrations to `DATABASE_URL` |
-| `pnpm db:seed` | Load the starter content in `supabase/seed.sql` |
-| `pnpm db:studio` | Drizzle Studio (set `DATABASE_URL_SESSION` to the session pooler URI) |
+| `pnpm db:migrate` | Apply pending migrations to `DATABASE_URL` (`--dry-run` lists them) |
+| `pnpm db:seed` | Load the starter content in `supabase/seed.sql` (refuses on a seeded database; `--force` adds missing rows) |
+| `pnpm db:studio` | Drizzle Studio (set `DATABASE_URL_SESSION` to the session pooler URI with `?sslmode=require` at the end) |
+| `node scripts/resize-images.ts` | Make the smaller copies of the site photos (see "Site photos" below) |
+| `scripts/local-db.sh start` | A local Postgres 16 without Docker (`stop`, `status`, `url`, `reset --seed`) |
+
+`pnpm db:migrate` and `pnpm db:seed` use an encrypted connection for any database host but
+your own machine. An `sslmode` in the URL (for example `verify-full`) still wins.
 
 ## Project layout
 
@@ -68,12 +85,17 @@ src/
   lib/components/admin/ admin building blocks
   lib/components/ui/    shadcn-svelte components
   lib/content/          editable page sections and labels
-  lib/server/           database, auth, storage, markdown, queries
+  lib/server/           database, auth, storage, markdown, queries, rate limits
+  hooks.server.ts       auth, the admin guard, cache and security headers
+static/images/          site photos and drawings (with their smaller copies)
+scripts/                migrate, seed, resize-images, local-db.sh
 supabase/
   migrations/           SQL migrations generated by Drizzle (applied by the GitHub integration)
   seed.sql              starter content
   config.toml           Supabase CLI and preview branch settings
 docs/                   setup guides
+vite.config.ts          Kit options, the Content-Security-Policy, Vercel region and images
+vercel.json             the daily cron, branches that are not deployed
 ```
 
 Contributor notes (conventions, SvelteKit 3 differences, design rules) are in
@@ -82,4 +104,89 @@ Contributor notes (conventions, SvelteKit 3 differences, design rules) are in
 ## Changing the database
 
 Edit `src/lib/server/db/schema.ts`, run `pnpm db:generate`, commit the new migration and open a
-pull request into `main`. Supabase applies it when the pull request is merged.
+pull request into `main`. The Supabase GitHub integration applies it when the pull request is
+merged. Never edit a migration that is already merged; for hand-written SQL, run
+`pnpm exec drizzle-kit generate --custom --name=xyz`. More in the
+[Supabase guide](docs/setup-supabase.md#8-changing-the-database-later).
+
+## How the live site behaves
+
+### Caching
+
+Public pages, their `__data.json`, `/rss.xml` and `/sitemap.xml` answer with
+`cache-control: public, max-age=0, s-maxage=60, stale-while-revalidate=600` (the `publicCache`
+hook in `src/hooks.server.ts`). Vercel's CDN serves a copy for 60 seconds without running the
+site's function or any query, then may serve it once more while it fetches a new one (for up
+to 10 minutes). So editors' changes show within about a minute; a new deployment starts with
+an empty cache. Only a GET or HEAD answered 200 on a `(site)` route, with no `set-cookie`, is
+cached. The admin panel, sign in and the API are `private, no-store`.
+
+Because of this, **no `(site)` load may read `locals.user`, `locals.editor` or cookies**: the
+CDN would hand one visitor's page to everyone.
+
+### Rate limits
+
+They are counted in the database, so they hold across all of Vercel's instances. Sign in uses
+the `rate_limits` table through `#lib/server/rate-limit.ts` (if the table can't be reached,
+each instance counts in memory instead). The contact form counts recent rows in `messages`.
+Neither stores a raw IP or email address for this: keys are keyed hashes, and IPv6 counts
+per /64.
+
+| What | Limits | Where |
+| --- | --- | --- |
+| Sign in email links | 5 per network per 10 min, 3 per address per hour, 20 sent per hour for the whole site. A 429 from Supabase pauses email links for the rest of the hour. The form always takes about 1.5 s | `src/routes/admin/login/+page.server.ts` |
+| Sign in codes | 10 per network and 5 per address per 10 min | same file |
+| Contact form | 5 per network per 10 min, 20 per email address per day, 60 for the whole site per hour (then the form points to the club's email). The form must be sent between 3 seconds and 24 hours after the page was rendered | `src/routes/(site)/about/` |
+
+Contact messages keep a hashed sender address for a day, for the limit. The daily
+`/api/health` cron deletes old counters and clears those hashes.
+
+### Content-Security-Policy
+
+Set in `vite.config.ts` (`csp` in `sveltekit({...})`), with hashes rather than nonces, because
+pages are cached. Scripts, styles and fonts load only from the site. Images, videos, 3D models
+and `fetch` may use any `https://` host, which covers the Supabase media bucket, the signed
+upload URLs and pictures linked from posts. Frames are limited to the YouTube
+(`www.youtube-nocookie.com`) and Vimeo (`player.vimeo.com`) players.
+
+Editors can't add a new embed host from the admin panel. To support a new video or embed
+provider:
+
+1. Teach the Markdown renderer the link: `src/lib/server/markdown/embeds.ts` (recognise it and
+   render the click to play figure), `src/lib/server/markdown/sanitize.ts` (allow its
+   `data-provider` value) and `src/lib/components/site/post-enhance.ts` (the player URL). The
+   editor's Embed dialog uses `src/lib/components/admin/posts/markdown-commands.ts`.
+2. Add the player's origin to `frame-src` in `vite.config.ts`.
+3. Run `pnpm build && pnpm preview:vercel`, open a post with the embed, click play and check
+   the browser console for "Content-Security-Policy" errors.
+
+An outside script, stylesheet or font needs its host in `script-src`, `style-src` or
+`font-src` the same way. Prefer self-hosting (the fonts come from `@fontsource`). A plain
+`<script>` in `src/app.html` is hashed on every build; inline event handlers (`onclick="..."`)
+are blocked.
+
+### Uploads
+
+The browser compresses images (at most 2400 px, WebP), asks `/admin/api/upload` for a signed
+upload URL, PUTs the file straight to Supabase Storage (so Vercel's 4.5 MB body limit doesn't
+apply) and then calls `/admin/api/upload/complete`, which checks the stored file and records
+it. Details are in `src/lib/components/admin/README.md`. Photos from the media bucket are
+resized by Vercel Image Optimization (`/_vercel/image`, quality 75, only this project's
+bucket, read from `SUPABASE_URL` at build time). That service exists only on Vercel:
+`pnpm dev` shows the originals, and `pnpm preview` of a build made with `SUPABASE_URL` can't
+show media photos.
+
+### Site photos
+
+Photos that ship with the code (`static/images/archive`, `static/images/people`) are not
+optimized by Vercel. `scripts/resize-images.ts` makes `-480w.webp` and `-960w.webp` copies
+next to each one and updates the `STATIC_PHOTOS` list in `src/lib/image.ts`, which `srcset()`
+and `optimizedSrc()` read. After adding a photo there:
+
+```bash
+node scripts/resize-images.ts           # make the missing copies
+node scripts/resize-images.ts --force   # after replacing a photo
+node scripts/resize-images.ts --check   # exit 1 if a copy or the list is out of date
+```
+
+Commit the copies and `src/lib/image.ts` with the photo.
