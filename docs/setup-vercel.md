@@ -58,7 +58,7 @@ with Supabase preview branches, gives every pull request its own database creden
 > Supabase organization billed through Vercel. We want the existing project from the Supabase
 > guide.
 
-Then add the one variable the integration doesn't know about:
+Then add the variables the integration doesn't know about:
 
 | Name | Value | Environments |
 | --- | --- | --- |
