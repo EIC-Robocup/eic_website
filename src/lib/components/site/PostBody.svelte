@@ -1,6 +1,6 @@
 <!--
 	A rendered blog post: the sanitised HTML from renderPost() (src/lib/server/markdown.ts) in
-	an <article> with the EIC prose styling (post.css), plus the client enhancements from
+	a <div> with the EIC prose styling (post.css), plus the client enhancements from
 	post-enhance.ts. They run after mount and again whenever `html` changes (the admin preview
 	re-renders it), and load code only for what the post uses: copy buttons, a lightbox for
 	images, lite YouTube/Vimeo players, Mermaid diagrams, 3D models and heading links.
@@ -88,14 +88,15 @@
 	{/if}
 </svelte:head>
 
-<article class={cn('post-body', className)}>
+<!-- A <div>: the post page's own <article> holds the header, cover and this body. -->
+<div class={cn('post-body', className)}>
 	{#key html}
 		<div class="post-content" bind:this={content}>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised by renderPost on the server -->
 			{@html html}
 		</div>
 	{/key}
-</article>
+</div>
 
 {#if Dialog && Btn && current}
 	<Dialog.Root bind:open>
