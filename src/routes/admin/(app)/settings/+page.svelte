@@ -52,7 +52,13 @@
 	}
 
 	const nameOf = (e: { name: string | null; email: string }) => e.name?.trim() || e.email;
+	/** An email split after the @ and before each dot, so it wraps there on phones. */
+	const emailParts = (email: string) => email.split(/(?<=@)|(?=\.)/);
 </script>
+
+{#snippet wrappable(text: string)}
+	{#each emailParts(text) as part, i (i)}{#if i}<wbr />{/if}{part}{/each}
+{/snippet}
 
 <PageHeader
 	breadcrumb={[{ label: 'Library' }, { label: 'Settings' }]}
@@ -75,7 +81,7 @@
 					<Table.Header>
 						<Table.Row class="border-0 border-t border-line hover:bg-transparent">
 							<Table.Head class="text-label h-9 px-4 text-[11px] font-medium text-ink-muted sm:px-[18px]">Editor</Table.Head>
-							<Table.Head class="text-label h-9 w-[140px] px-2 text-[11px] font-medium text-ink-muted">Role</Table.Head>
+							<Table.Head class="text-label h-9 w-[112px] px-2 text-[11px] font-medium text-ink-muted sm:w-[140px]">Role</Table.Head>
 							<Table.Head class="text-label hidden h-9 w-[130px] px-2 text-[11px] font-medium text-ink-muted sm:table-cell">
 								Last sign in
 							</Table.Head>
@@ -91,14 +97,14 @@
 								<Table.Cell class="max-w-0 px-4 py-3 whitespace-normal sm:px-[18px]">
 									<div class="flex min-w-0 flex-col gap-0.5">
 										<span class="flex flex-wrap items-center gap-x-2 gap-y-1">
-											<span class="truncate text-sm font-medium text-ink">{nameOf(editor)}</span>
+											<span class="min-w-0 text-sm font-medium text-ink [overflow-wrap:anywhere] sm:truncate">{@render wrappable(nameOf(editor))}</span>
 											{#if isYou}<StatusBadge label="You" tone="neutral" class="h-5 px-2" />{/if}
 											{#if editor.alwaysAllowed}
 												<StatusBadge label="ADMIN_EMAILS" tone="neutral" class="h-5 px-2 font-mono text-[11px]" />
 											{/if}
 										</span>
 										{#if editor.name?.trim()}
-											<span class="truncate text-xs leading-[18px] text-ink-muted">{editor.email}</span>
+											<span class="text-xs leading-[18px] text-ink-muted [overflow-wrap:anywhere] sm:truncate">{@render wrappable(editor.email)}</span>
 										{/if}
 										<span class="text-xs leading-[18px] text-ink-muted sm:hidden">
 											{editor.lastSignInAt ? `Signed in ${timeAgo(editor.lastSignInAt, now, { lower: true })}` : 'Not signed in yet'}
