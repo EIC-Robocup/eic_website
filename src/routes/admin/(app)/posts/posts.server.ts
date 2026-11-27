@@ -270,7 +270,7 @@ export async function readPostForm(form: FormData, now = new Date()): Promise<Re
 			publishedAt,
 			coverUrl: cover.url || null,
 			coverAlt: cover.url ? cover.alt || null : null,
-			coverCaption: cover.url ? coverCaption : null,
+			coverCaption: coverCaption || null,
 			tags,
 			projectId,
 			featured
