@@ -5,8 +5,8 @@
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { notify } from '#lib/components/site/notify.ts';
 
 	type Props = { url: string; title: string; text?: string | null };
 	let { url, title, text }: Props = $props();
@@ -47,8 +47,9 @@
 		} catch {
 			ok = copyWithSelection(url);
 		}
-		if (ok) toast.success('Link copied', { id: 'share-copy' });
-		else toast.error('Could not copy the link', { id: 'share-copy', description: url });
+		// The toast library loads with the first toast (notify.ts), not with every page.
+		if (ok) void notify('Link copied', 'success', { id: 'share-copy' });
+		else void notify('Could not copy the link', 'error', { id: 'share-copy', description: url });
 	}
 
 	async function share() {

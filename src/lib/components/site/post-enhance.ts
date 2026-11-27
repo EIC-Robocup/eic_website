@@ -2,7 +2,7 @@
  * Client enhancements for a rendered post (PostBody runs them after mount and whenever the
  * HTML changes). Each feature looks for its markup and loads its code only when the post has
  * it: mermaid and @google/model-viewer are dynamic imports, and so are the shadcn Button and
- * the toast used by copy buttons.
+ * the toast used by copy buttons (notify.ts).
  *
  * - heading anchor links (shown on hover and focus; a click also copies the link)
  * - copy buttons on code blocks, with a "Copied" toast
@@ -12,6 +12,7 @@
  * - click to zoom for figures, galleries and images (PostBody shows the lightbox)
  */
 import type { Component } from 'svelte';
+import { notify } from './notify.ts';
 
 export type LightboxItem = {
 	src: string;
@@ -35,29 +36,6 @@ type Cleanup = () => void;
 const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 const VIMEO_ID = /^\d{1,12}$/;
 const VIMEO_HASH = /^[0-9a-f]{6,20}$/i;
-
-/* ------------------------------------------------------------------------------------------ */
-/* Toasts                                                                                       */
-/* ------------------------------------------------------------------------------------------ */
-
-let toasterMounted = false;
-
-/** Show a toast, mounting a Toaster first when the page has none (the public site). */
-export async function notify(message: string, kind: 'success' | 'error' = 'success'): Promise<void> {
-	const { toast } = await import('svelte-sonner');
-	if (!toasterMounted && !document.querySelector('section[aria-label^="Notifications"][aria-live]')) {
-		toasterMounted = true;
-		const [{ mount }, { Toaster }] = await Promise.all([import('svelte'), import('#lib/components/ui/sonner/index.js')]);
-		mount(Toaster as unknown as Component<Record<string, unknown>>, {
-			target: document.body,
-			props: { position: 'bottom-center' }
-		});
-		// Give the toaster a frame to subscribe before the first toast.
-		await new Promise((done) => requestAnimationFrame(() => done(null)));
-	}
-	if (kind === 'error') toast.error(message);
-	else toast.success(message);
-}
 
 async function copyText(text: string): Promise<boolean> {
 	try {
@@ -269,6 +247,10 @@ function loadMermaid(): Promise<Mermaid> {
 		mermaid.initialize({
 			startOnLoad: false,
 			securityLevel: 'strict',
+			// Mermaid 12 lays out flowcharts, state and class diagrams with ELK by default, a 1.5 MB
+			// download. Dagre draws them too; a diagram can still opt in to ELK with an init
+			// directive (%%{init: {"layout": "elk"}}%%) or `flowchart-elk`.
+			layout: 'dagre',
 			// Hairlines, no shadows (brand book).
 			themeCSS: '.node rect, .node polygon, .node circle, .node path, .cluster rect { filter: none !important; }',
 			theme: 'base',
