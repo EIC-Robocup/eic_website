@@ -90,8 +90,9 @@ What it does and doesn't deploy to production:
 The production database must be empty for the first migration: don't create tables in the
 Table Editor.
 
-1. Check that the integration is on (the steps above) **before** you merge. It only runs on
-   pushes to `main`, so a merge made before it was on deploys nothing.
+1. Check that the integration is on (the steps above) **before** you merge. It runs on pushes
+   to `main`, so a merge made before it was on may deploy nothing (see below if that
+   happened).
 2. Merge `feat/v1` into `main` (open a pull request on GitHub and merge it).
 3. In the Dashboard, open the branch dropdown in the top bar → **Manage branches** → `main` →
    **View logs**, and check that every file in `supabase/migrations/` was applied (`init`,
