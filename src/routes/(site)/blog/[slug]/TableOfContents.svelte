@@ -64,7 +64,8 @@
 					href="#{heading.id}"
 					aria-current={current ? 'location' : undefined}
 					class={[
-						'-ml-px flex min-h-9 items-center border-l py-1.5 text-sm leading-5 no-underline transition-colors duration-150',
+						// 44px on phones (the inline list is xl:hidden), 36px in the desktop sidebar.
+						'-ml-px flex min-h-11 items-center border-l py-1.5 text-sm leading-5 no-underline transition-colors duration-150 xl:min-h-9',
 						heading.depth > 2 ? 'pl-7' : 'pl-4',
 						current
 							? 'border-ink text-ink'

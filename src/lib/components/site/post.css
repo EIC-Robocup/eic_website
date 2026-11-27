@@ -1154,6 +1154,28 @@
 	text-decoration: none;
 }
 
+/* Bigger tap areas than the glyphs: an invisible box centred on each link. The back link gets
+   the full 44px. The reference sits inside a line of text (WCAG exempts inline targets), so it
+   gets 28px, which stays clear of links on the lines above and below. */
+.post-body :is(.fn-ref-link, .fn-back) {
+	position: relative;
+}
+.post-body :is(.fn-ref-link, .fn-back)::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+.post-body .fn-back::before {
+	width: max(100%, 44px);
+	height: max(100%, 44px);
+}
+.post-body .fn-ref-link::before {
+	width: max(100%, 28px);
+	height: 28px;
+}
+
 /* The lightbox (PostBody) is portalled to <body>: darken its overlay more than a dialog's. */
 [data-slot='dialog-overlay']:has(~ .eic-lightbox) {
 	background: rgba(0, 0, 0, 0.86);
