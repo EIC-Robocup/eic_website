@@ -15,7 +15,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 	import ButtonLink from './ButtonLink.svelte';
-	import { useHydrated } from './hydrated.svelte.ts';
+	import { focusedIndex, refocus, useHydrated } from './hydrated.svelte.ts';
 	import { NAV_LINKS, isActivePath } from './links.ts';
 	import logo from './assets/eic-logo-128.webp';
 
@@ -27,7 +27,11 @@
 	let { cta = { label: 'Join EIC', href: '/about#join' } }: Props = $props();
 
 	let open = $state(false);
-	const hydrated = useHydrated();
+	/** The menu link shown until the page is interactive, then the Sheet's menu button. */
+	let standInButton: HTMLElement | null = $state(null);
+	let menuButton: HTMLElement | null = $state(null);
+	// Focus on the stand-in moves to the menu button when it takes over.
+	const hydrated = useHydrated(() => refocus(focusedIndex(standInButton), () => menuButton));
 	let closeButton: HTMLElement | null = $state(null);
 	/**
 	 * Set when a navigation closes the menu: it then goes at once (the page transition fades it
@@ -129,7 +133,7 @@
 			<Sheet.Root bind:open {onOpenChange}>
 				<Sheet.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="outline-ink" size="site-icon" class="md:hidden">
+						<Button {...props} bind:ref={menuButton} variant="outline-ink" size="site-icon" class="md:hidden">
 							<span class="sr-only">Menu</span>
 							{@render icon('M4 7 H20 M4 12 H20 M4 17 H20')}
 						</Button>
@@ -195,7 +199,7 @@
 				</Sheet.Content>
 			</Sheet.Root>
 		{:else}
-			<Button href="#footer-nav" variant="outline-ink" size="site-icon" class="md:hidden">
+			<Button bind:ref={standInButton} href="#footer-nav" variant="outline-ink" size="site-icon" class="md:hidden">
 				<span class="sr-only">Menu</span>
 				{@render icon('M4 7 H20 M4 12 H20 M4 17 H20')}
 			</Button>

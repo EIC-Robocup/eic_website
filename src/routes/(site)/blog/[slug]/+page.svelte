@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import ImageSlot from '#lib/components/site/ImageSlot.svelte';
-	import { useHydrated } from '#lib/components/site/hydrated.svelte.ts';
+	import { focusedIndex, refocus, useHydrated } from '#lib/components/site/hydrated.svelte.ts';
 	import PostBody from '#lib/components/site/PostBody.svelte';
 	import PostCard from '#lib/components/site/PostCard.svelte';
 	import Seo from '#lib/components/site/Seo.svelte';
@@ -32,7 +32,14 @@
 	const morph = $derived(post.coverUrl ? postMorphKey(post.slug) : undefined);
 
 	let article = $state<HTMLElement>();
-	const hydrated = useHydrated();
+	/** The phone contents list's frame, which holds the <details> and then the Collapsible. */
+	let tocFrame = $state<HTMLElement>();
+	let tocOpen = $state(false);
+	// A list opened before the page was interactive stays open, and focus stays on it.
+	const hydrated = useHydrated(() => {
+		tocOpen = tocFrame?.querySelector('details')?.open ?? false;
+		refocus(focusedIndex(tocFrame), () => tocFrame);
+	});
 
 	/** Bylines like "AI Team" or "EIC Chula" are groups, not people. */
 	const isGroup = (name: string) => /\b(team|club|eic|advisors|support|lab)\b/i.test(name);
@@ -164,9 +171,9 @@
 			{#if showToc}
 				<!-- The frame stays put while the native <details> (before the page is interactive, and
 				     without JavaScript) gives way to the shadcn Collapsible. -->
-				<div class="mb-10 rounded-lg border border-line bg-surface-200 xl:hidden">
+				<div bind:this={tocFrame} class="mb-10 rounded-lg border border-line bg-surface-200 xl:hidden">
 					{#if hydrated.current}
-						<Collapsible.Root class="group">
+						<Collapsible.Root bind:open={tocOpen} class="group">
 							<Collapsible.Trigger
 								class="flex min-h-12 w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-5 text-left"
 							>

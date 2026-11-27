@@ -16,7 +16,7 @@
 	import * as ToggleGroup from '#lib/components/ui/toggle-group/index.js';
 	import { toggleVariants } from '#lib/components/ui/toggle/index.js';
 	import { cn } from '#lib/utils.js';
-	import { useHydrated } from './hydrated.svelte.ts';
+	import { focusedIndex, refocus, useHydrated } from './hydrated.svelte.ts';
 
 	type Props = {
 		/** Accessible name of the group, e.g. "Filter projects". */
@@ -32,7 +32,11 @@
 
 	let { label, options, value = $bindable(), onchange, href, class: className }: Props = $props();
 
-	const hydrated = useHydrated();
+	/** The links shown until the page is interactive, then the ToggleGroup. */
+	let links: HTMLElement | null = $state(null);
+	let group: HTMLElement | null = $state(null);
+	// A focused link hands focus to the pill for the same option.
+	const hydrated = useHydrated(() => refocus(focusedIndex(links), () => group));
 	const withCounts = $derived(options.some((o) => o.count != null));
 	const groupClass = $derived(cn('w-auto flex-wrap rounded-none', className));
 
@@ -51,7 +55,7 @@
 
 {#if href && !hydrated.current}
 	<!-- Same look as the ToggleGroup: data-state drives the pill variant's selected style. -->
-	<ul aria-label={label} class={cn('m-0 flex list-none items-center gap-2 p-0', groupClass)}>
+	<ul bind:this={links} aria-label={label} class={cn('m-0 flex list-none items-center gap-2 p-0', groupClass)}>
 		{#each options as option (option.value)}
 			{@const selected = option.value === value}
 			<li>
@@ -72,6 +76,7 @@
 	</ul>
 {:else}
 	<ToggleGroup.Root
+		bind:ref={group}
 		type="single"
 		variant="pill"
 		size="pill"
