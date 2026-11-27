@@ -249,10 +249,14 @@
 	}
 </script>
 
+<!-- A 44px hit area round the words; in a compact zone, where it wraps under "Upload", a smaller one. -->
 {#snippet linkButton(text: string)}
 	<button
 		type="button"
-		class="relative z-[1] inline-flex min-h-6 items-center text-brand-text underline-offset-4 before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-[''] hover:text-ink hover:underline disabled:opacity-50"
+		class={[
+			"relative z-[1] inline-flex min-h-6 items-center text-brand-text underline-offset-4 before:absolute before:-inset-x-1 before:content-[''] hover:text-ink hover:underline disabled:opacity-50",
+			compact ? 'before:-inset-y-1' : 'before:-inset-y-2.5'
+		]}
 		{disabled}
 		onclick={openLink}>{text}</button
 	>
