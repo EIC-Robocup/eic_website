@@ -59,7 +59,7 @@
 			</div>
 
 			<div class="flex flex-wrap gap-x-[72px] gap-y-10">
-				<nav aria-labelledby="footer-explore" class="flex flex-col">
+				<nav id="footer-nav" aria-labelledby="footer-explore" class="flex flex-col">
 					<h2 id="footer-explore" class="text-label mb-1.5 text-ink-muted">Explore</h2>
 					<ul class="m-0 flex list-none flex-col p-0">
 						{#each NAV_LINKS as link (link.href)}

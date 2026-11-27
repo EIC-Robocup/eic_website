@@ -3,6 +3,8 @@
 	marked with a 2px brand underline) and the red call to action. Below 768px the links
 	and the button move into a menu: a shadcn Sheet that drops from the top and repeats the
 	bar, so it looks like the bar opening. It closes on navigation, Escape and a tap outside.
+	Until the page is interactive (and without JavaScript) the menu button is a plain link to
+	the footer's Explore list (#footer-nav), so it never sits there doing nothing.
 
 	The header keeps still during page transitions (view-transition-name: site-nav).
 -->
@@ -13,6 +15,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 	import ButtonLink from './ButtonLink.svelte';
+	import { useHydrated } from './hydrated.svelte.ts';
 	import { NAV_LINKS, isActivePath } from './links.ts';
 	import logo from './assets/eic-logo-128.webp';
 
@@ -24,6 +27,7 @@
 	let { cta = { label: 'Join EIC', href: '/about#join' } }: Props = $props();
 
 	let open = $state(false);
+	const hydrated = useHydrated();
 	let closeButton: HTMLElement | null = $state(null);
 	/**
 	 * Set when a navigation closes the menu: it then goes at once (the page transition fades it
@@ -121,73 +125,80 @@
 			{/if}
 		</div>
 
-		<Sheet.Root bind:open {onOpenChange}>
-			<Sheet.Trigger>
-				{#snippet child({ props })}
-					<Button {...props} variant="outline-ink" size="site-icon" class="md:hidden">
-						<span class="sr-only">Menu</span>
-						{@render icon('M4 7 H20 M4 12 H20 M4 17 H20')}
-					</Button>
-				{/snippet}
-			</Sheet.Trigger>
-			<Sheet.Content
-				side="top"
-				showCloseButton={false}
-				overlayClass={[
-					'bg-surface-000/70 supports-backdrop-filter:backdrop-blur-none',
-					navigated && 'data-closed:hidden! data-closed:animate-none!'
-				].filter(Boolean).join(' ')}
-				class={[
-					'gap-0 border-line bg-surface-100 p-0 text-base text-ink shadow-none [view-transition-name:site-menu] md:hidden',
-					navigated && 'data-closed:hidden! data-closed:animate-none!'
-				].filter(Boolean).join(' ')}
-				onOpenAutoFocus={(event) => {
-					// Like the bar's own button turning into the close button.
-					event.preventDefault();
-					closeButton?.focus();
-				}}
-				onCloseAutoFocus={(event) => {
-					if (navigated) event.preventDefault();
-				}}
-			>
-				<Sheet.Title class="sr-only">Menu</Sheet.Title>
-				<div class="border-b border-line">
-					<div class="site-container flex min-h-16 items-center justify-between gap-x-8">
-						{@render brand()}
-						<Sheet.Close>
-							{#snippet child({ props })}
-								<Button {...props} bind:ref={closeButton} variant="outline-ink" size="site-icon">
-									<span class="sr-only">Close menu</span>
-									{@render icon('M6 6 L18 18 M18 6 L6 18')}
-								</Button>
-							{/snippet}
-						</Sheet.Close>
+		{#if hydrated.current}
+			<Sheet.Root bind:open {onOpenChange}>
+				<Sheet.Trigger>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline-ink" size="site-icon" class="md:hidden">
+							<span class="sr-only">Menu</span>
+							{@render icon('M4 7 H20 M4 12 H20 M4 17 H20')}
+						</Button>
+					{/snippet}
+				</Sheet.Trigger>
+				<Sheet.Content
+					side="top"
+					showCloseButton={false}
+					overlayClass={[
+						'bg-surface-000/70 supports-backdrop-filter:backdrop-blur-none',
+						navigated && 'data-closed:hidden! data-closed:animate-none!'
+					].filter(Boolean).join(' ')}
+					class={[
+						'gap-0 border-line bg-surface-100 p-0 text-base text-ink shadow-none [view-transition-name:site-menu] md:hidden',
+						navigated && 'data-closed:hidden! data-closed:animate-none!'
+					].filter(Boolean).join(' ')}
+					onOpenAutoFocus={(event) => {
+						// Like the bar's own button turning into the close button.
+						event.preventDefault();
+						closeButton?.focus();
+					}}
+					onCloseAutoFocus={(event) => {
+						if (navigated) event.preventDefault();
+					}}
+				>
+					<Sheet.Title class="sr-only">Menu</Sheet.Title>
+					<div class="border-b border-line">
+						<div class="site-container flex min-h-16 items-center justify-between gap-x-8">
+							{@render brand()}
+							<Sheet.Close>
+								{#snippet child({ props })}
+									<Button {...props} bind:ref={closeButton} variant="outline-ink" size="site-icon">
+										<span class="sr-only">Close menu</span>
+										{@render icon('M6 6 L18 18 M18 6 L6 18')}
+									</Button>
+								{/snippet}
+							</Sheet.Close>
+						</div>
 					</div>
-				</div>
-				<nav aria-label="Main">
-					<ul class="site-container m-0 flex list-none flex-col py-2">
-						{#each links as link (link.href)}
-							<li class="border-b border-line last:border-b-0">
-								<a
-									href={link.href}
-									aria-current={link.current ? 'page' : link.active ? 'true' : undefined}
-									class={[
-										'flex min-h-12 items-center text-base font-medium no-underline transition-colors duration-150',
-										link.active
-											? 'pl-3 text-ink shadow-[inset_2px_0_0_var(--eic-brand)]'
-											: 'text-ink-muted hover:text-ink'
-									]}>{link.label}</a
-								>
-							</li>
-						{/each}
-					</ul>
-				</nav>
-				{#if cta.href && cta.label}
-					<div class="site-container pb-4">
-						<ButtonLink href={cta.href} class="w-full">{cta.label}</ButtonLink>
-					</div>
-				{/if}
-			</Sheet.Content>
-		</Sheet.Root>
+					<nav aria-label="Main">
+						<ul class="site-container m-0 flex list-none flex-col py-2">
+							{#each links as link (link.href)}
+								<li class="border-b border-line last:border-b-0">
+									<a
+										href={link.href}
+										aria-current={link.current ? 'page' : link.active ? 'true' : undefined}
+										class={[
+											'flex min-h-12 items-center text-base font-medium no-underline transition-colors duration-150',
+											link.active
+												? 'pl-3 text-ink shadow-[inset_2px_0_0_var(--eic-brand)]'
+												: 'text-ink-muted hover:text-ink'
+										]}>{link.label}</a
+									>
+								</li>
+							{/each}
+						</ul>
+					</nav>
+					{#if cta.href && cta.label}
+						<div class="site-container pb-4">
+							<ButtonLink href={cta.href} class="w-full">{cta.label}</ButtonLink>
+						</div>
+					{/if}
+				</Sheet.Content>
+			</Sheet.Root>
+		{:else}
+			<Button href="#footer-nav" variant="outline-ink" size="site-icon" class="md:hidden">
+				<span class="sr-only">Menu</span>
+				{@render icon('M4 7 H20 M4 12 H20 M4 17 H20')}
+			</Button>
+		{/if}
 	</nav>
 </header>

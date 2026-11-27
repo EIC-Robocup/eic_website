@@ -52,6 +52,9 @@
 
 	const categoryOptions = [{ value: 'all', label: 'All' }, ...POST_CATEGORY_OPTIONS];
 
+	/** Each pill's own page: the links the pills are until the page is interactive. */
+	const categoryHref = (value: string) => blogHref({ category: value === 'all' ? null : value });
+
 	function pickCategory(value: string) {
 		// Take the search box along, even if its pause has not passed yet.
 		clearTimeout(timer);
@@ -195,6 +198,7 @@
 				options={categoryOptions}
 				bind:value={category}
 				onchange={pickCategory}
+				href={categoryHref}
 			/>
 			<form
 				role="search"
