@@ -5,7 +5,8 @@ file storage for uploads. This guide sets up the production project, connects it
 so merged migrations deploy themselves, and turns on sign in.
 
 You need: a Supabase account, admin access to the `EIC-Robocup/eic_website` GitHub repo, and
-about 30 minutes. Do the [Vercel guide](./setup-vercel.md) after this one (or alongside it).
+about 30 minutes. Do the [Vercel guide](./setup-vercel.md) after this one. Step 3 merges
+`feat/v1` into `main`, and Vercel can only build `main` once that is done.
 
 > Dashboard names below are from late 2026. If a menu has moved, use the search box at the
 > top of the Supabase Dashboard.
@@ -47,7 +48,7 @@ need the session pooler URI for running scripts from your laptop.
 | Publishable key `sb_publishable_...` | Project Settings → **API Keys** → "Publishable and secret API keys" (click **Create new API keys** if empty) | `SUPABASE_PUBLISHABLE_KEY` |
 | Secret key `sb_secret_...` | same page, **Secret keys** → reveal → copy | `SUPABASE_SECRET_KEY` (server only, never share it) |
 | Transaction pooler URI (port **6543**) | Connect → **Connection String** → Transaction pooler | `DATABASE_URL` on Vercel, only if you don't use the Supabase ↔ Vercel integration (it sets `POSTGRES_URL` for you) |
-| Session pooler URI (port **5432**) | Connect → **Connection String** → Session pooler | for `pnpm db:seed`, `pnpm db:migrate` and Drizzle Studio from your laptop |
+| Session pooler URI (port **5432**) | Connect → **Connection String** → Session pooler | for `pnpm db:seed`, `pnpm db:migrate` and Drizzle Studio from your laptop. For Drizzle Studio, add `?sslmode=require` to the end |
 
 Replace `[YOUR-PASSWORD]` in the URIs with the database password. Pooler URIs look like
 `postgresql://postgres.<ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`.
@@ -89,14 +90,21 @@ What it does and doesn't deploy to production:
 The production database must be empty for the first migration: don't create tables in the
 Table Editor.
 
-1. Merge `feat/v1` into `main` (open a pull request on GitHub and merge it).
-2. In the Dashboard, open the branch dropdown in the top bar → **Manage branches** → `main` →
+1. Check that the integration is on (the steps above) **before** you merge. It only runs on
+   pushes to `main`, so a merge made before it was on deploys nothing.
+2. Merge `feat/v1` into `main` (open a pull request on GitHub and merge it).
+3. In the Dashboard, open the branch dropdown in the top bar → **Manage branches** → `main` →
    **View logs**, and check that every file in `supabase/migrations/` was applied (`init`,
    `storage_media_bucket`, `revoke_data_api_access`, `achievement_entrants`,
-   `media_bucket_types`, and any added later).
-3. **Table Editor** should now list the tables (`projects`, `posts`, `people`, ...) and
-   **Storage** a public bucket called `media` (images up to 10 MB, PDFs 20 MB, 3D models 25 MB,
-   videos 50 MB; photos are compressed in the browser before upload, and SVG is not allowed).
+   `media_bucket_types`, `rate_limits`, and any added later).
+4. **Table Editor** should now list the tables (`projects`, `posts`, `people`, ...,
+   `rate_limits`) and **Storage** a public bucket called `media` with a 50 MB file size limit
+   and 10 allowed types (PNG, JPEG, WebP, GIF, AVIF, PDF, MP4, WebM, GLB and glTF; no SVG). The
+   admin panel applies tighter limits per type (images 10 MB, PDFs 20 MB, 3D models 25 MB,
+   videos 50 MB) and compresses photos in the browser before they are uploaded.
+
+If `feat/v1` was merged before the integration was on and **View logs** shows no run, apply the
+migrations once from your laptop (below). The integration skips them afterwards.
 
 Without the integration (or to apply migrations by hand), run from your laptop:
 
@@ -105,8 +113,10 @@ DATABASE_URL="<session pooler URI>" pnpm db:migrate
 ```
 
 `pnpm db:migrate` records migrations in the same table the Supabase CLI uses, so it and the
-integration agree on what has run. Never run `drizzle-kit migrate` or `drizzle-kit push`
-against Supabase: they keep their own records and would apply migrations twice.
+integration agree on what has run. It uses an encrypted connection (TLS) for every host but
+your own machine. Add `--dry-run` to list what would run without changing anything. Never run
+`drizzle-kit migrate` or `drizzle-kit push` against Supabase: they keep their own records and
+would apply migrations twice.
 
 ### Preview branches (Pro)
 
@@ -114,7 +124,16 @@ against Supabase: they keep their own records and would apply migrations twice.
 - If Vercel is connected to Supabase (see the Vercel guide), Supabase copies the preview
   branch's credentials into that pull request's Vercel preview deployment.
 - Preview databases have their own auth callback URL, so GitHub and Google sign in won't work
-  on them. Use the email link there.
+  on them. Use the email link there. Two things to do before turning branching on:
+  1. Replace `<vercel-team-slug>` in `supabase/config.toml` (`[auth] additional_redirect_urls`)
+     with your Vercel team slug (Vercel guide, step 6) and commit it. Preview branches take
+     their sign in settings from that file, so until then their sign in emails link to
+     `http://localhost:5173`.
+  2. Preview branches send email with Supabase's built-in sender (`config.toml` has no SMTP
+     section), which reaches only members of your Supabase organization, a couple of emails an
+     hour. Add testers to the organization, or add an `[auth.email.smtp]` section to
+     `supabase/config.toml` with `pass = "env(SMTP_PASS)"` (never the password itself) and
+     give the branches that secret as Supabase's branching docs describe.
 - Optional: in GitHub → repo **Settings → Branches** → rule for `main` → **Require status checks**
   → add **Supabase Preview**, so a pull request with a broken migration can't be merged.
 
@@ -128,6 +147,7 @@ pnpm install
 DATABASE_URL="<session pooler URI>" pnpm db:seed
 ```
 
+Like `pnpm db:migrate`, it uses an encrypted connection for every host but your own machine.
 It refuses to run if the database already has projects (pass `--force` to insert any missing
 rows anyway; existing rows are never overwritten). Afterwards, everything is edited in the
 admin panel.
@@ -184,9 +204,29 @@ sends very few emails an hour. For real use, connect your own SMTP provider:
 2. Authentication → **Emails** → **SMTP Settings** → enable custom SMTP and fill in host, port,
    username, password, sender email (e.g. `no-reply@eicchula.club`) and sender name
    (`EIC Chula`).
-3. Authentication → **Rate Limits**: raise "emails per hour" if needed (it starts at 30).
+3. Authentication → **Rate Limits**: check that "emails per hour" is at least 30 (the starting
+   value with custom SMTP).
 
 Until then, GitHub and Google sign in work without email.
+
+The site limits sign in emails itself as well, so nobody can use up the email quota and lock
+the editors out. The limits hold across all of Vercel's servers (they are counted in the
+`rate_limits` table):
+
+- Email links: 5 requests per network every 10 minutes, 3 per email address an hour, and at
+  most 20 emails an hour for the whole site. Everyone on one network (for example campus
+  Wi-Fi) shares the first limit.
+- 6-digit codes: 10 tries per network and 5 per email address every 10 minutes.
+- If Supabase itself refuses an email for its own limit, the site stops sending email links
+  for the rest of that hour.
+- Over an email limit, the sign in page says "Too many sign in emails were asked for just now.
+  Try again later, or continue with GitHub or Google." Over a code limit it says "Too many
+  tries. Wait a few minutes, then try again." GitHub and Google sign in have no such limit.
+- The email form always takes about 1.5 seconds to answer, invited or not, so it never
+  reveals who is invited.
+
+Raising Supabase's "emails per hour" doesn't raise the site's 20. That number is
+`EMAIL_LIMITS` in `src/routes/admin/login/+page.server.ts`; keep it below Supabase's limit.
 
 ### 5.4 GitHub sign in
 
@@ -261,20 +301,28 @@ Two options:
 
 - **Full Supabase locally** (needs Docker): `pnpm dlx supabase@3 start` runs Postgres, Auth,
   Storage and a test inbox with this repo's `supabase/config.toml`, migrations and seed. It
-  prints local URLs and keys; put them in `.env` (`DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres`,
+  applies the migrations and `supabase/seed.sql` itself, so skip `pnpm db:seed`. It prints
+  local URLs and keys; put them in `.env`
+  (`DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres`,
   `SUPABASE_URL=http://127.0.0.1:54321`, plus the printed publishable and secret keys).
   Sign in emails show up in the local inbox it prints (Mailpit).
-- **Just Postgres** (no Docker): `scripts/local-db.sh start` starts a local Postgres 16 with
-  stand-ins for Supabase's schemas, then `pnpm db:migrate && pnpm db:seed`. Set
-  `DEV_AUTH_EMAIL=you@example.com` in `.env` to skip sign in during `pnpm dev` (ignored in
-  production builds). Uploads need a real Supabase project.
+- **Just Postgres** (no Docker): needs Postgres 16 (set `PG_BIN` if its programs are not in
+  `/usr/lib/postgresql/16/bin`). `scripts/local-db.sh start` starts it with stand-ins for
+  Supabase's schemas. Put `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54329/postgres`
+  (what `scripts/local-db.sh url` prints) in `.env`, then run
+  `pnpm db:migrate && pnpm db:seed`. Uploads need a real Supabase project.
+
+Either way, set `DEV_AUTH_EMAIL=you@example.com` and `ADMIN_EMAILS=you@example.com` in `.env`
+to skip sign in during `pnpm dev` (ignored in production builds). `ADMIN_EMAILS` is what makes
+that address an editor (an owner) on a fresh database, which has no editors.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
 | Sign in returns to the home page instead of the admin | Add the site's address to Redirect URLs (5.1). |
-| "This account isn't invited" | Invite the email in Admin → Settings, or add it to `ADMIN_EMAILS`. The GitHub/Google account's email must match. |
+| "That account is not invited to the admin panel" | Invite the email in Admin → Settings, or add it to `ADMIN_EMAILS`. The GitHub or Google account's email must match. |
+| "Too many sign in emails were asked for just now" | A sign in limit was reached (5.3). Wait up to an hour, or sign in with GitHub or Google. If it happens often, check **Logs** on Vercel for "Supabase refused the sign in email", which means Supabase's own email limit (5.3, step 3) is too low. |
 | No sign in email arrives | Set up custom SMTP (5.3). The built-in sender only mails Supabase org members. |
 | Email link says it expired right away | Check the template from 5.2 is in place (both templates). |
 | First migration fails with "already exists" | Tables were created by hand. Use a fresh project, or drop them. |

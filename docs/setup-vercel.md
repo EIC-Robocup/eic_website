@@ -23,7 +23,10 @@ GitHub organization (or an org owner to approve). About 20 minutes, plus DNS tim
    Directory, Install Command and Root Directory (`./`) on their defaults. Vercel reads pnpm
    from `pnpm-lock.yaml` and the `packageManager` field.
 6. Don't add environment variables yet: connect Supabase first (step 2). Click **Deploy**. This
-   first deployment builds `main`. It works without variables, but has no database until step 2.
+   first deployment builds `main`. If `feat/v1` is not merged yet (Supabase guide, step 3
+   "First deploy"), `main` is still the starter scaffold and this build fails with
+   `env_invalid ... DATABASE_URL`. That is expected: it goes green once `feat/v1` is merged
+   (step 4). After the merge it builds without variables, but has no database until step 2.
 
 Production branch: `main` (Vercel uses the repo's default branch). Pushes to `feat/v1` and pull
 requests become **preview** deployments. Branches named `claude/*` are not deployed
@@ -66,6 +69,8 @@ Do **not** add `DATABASE_URL` on Vercel when the integration is connected: the s
 Never set `DEV_AUTH_EMAIL` on Vercel (it is ignored outside `pnpm dev` anyway).
 
 Changing variables only affects new deployments: **Deployments → ⋯ → Redeploy** afterwards.
+`SUPABASE_URL` is also read while the site is built, to allow resizing of uploaded photos
+(step 9), so a redeploy is needed for that too.
 
 ### Without the integration (manual variables)
 
@@ -96,15 +101,25 @@ Functions → Function Region → Singapore (sin1)**.
 
 ## 4. Deploy
 
-Merge `feat/v1` into `main` (pull request on GitHub). Vercel deploys production and, with the
-Supabase GitHub integration on, Supabase applies the migrations at the same time. Then load the
-starter content once (Supabase guide, step 4) and open the site.
+1. If `feat/v1` is not merged into `main` yet, turn the Supabase GitHub integration on first
+   (Supabase guide, step 3), then merge `feat/v1` into `main` now (pull request on GitHub).
+   Vercel deploys production and Supabase applies the migrations at the same time.
+2. If you merged it earlier (you did the whole Supabase guide first), redeploy production so it
+   picks up the variables from step 2: **Deployments** → the newest production deployment →
+   **⋯** → **Redeploy**.
+3. Load the starter content once (Supabase guide, step 4), if you haven't yet, and open the
+   site.
 
 Check:
 
 - `https://<your-project>.vercel.app/api/health` returns `{"ok":true,"database":"ok"}`.
 - The home page shows Walkie 4, the projects and the people.
 - `/admin` shows the sign in page with GitHub, Google and email options.
+- Sign in, open **Admin → Media** and upload a photo. It should appear in the library. This
+  checks the upload path and the site's Content-Security-Policy (step 9).
+- Load the home page twice and look at the response headers in the browser's developer tools
+  (Network tab, the first request). The second load shows `x-vercel-cache: HIT`, so Vercel's
+  CDN serves the page (step 9).
 
 ## 5. Custom domain `eicchula.club`
 
@@ -163,13 +178,42 @@ pnpm dlx vercel@latest env pull    # writes .env.local with the Development valu
 keep a local `DATABASE_URL` in `.env` (it wins over `POSTGRES_URL`) so local work doesn't touch
 production.
 
+## 9. Caching, security and photos
+
+Nothing to switch on here: the code already does all of this. It is written down so the site's
+behaviour is no surprise.
+
+- **Public pages are cached for about a minute.** Vercel's CDN keeps each public page (and
+  `/rss.xml` and `/sitemap.xml`) for 60 seconds and serves it without running the site's code
+  or the database. After that, it may serve the old copy once more while it fetches a new one
+  (for up to 10 minutes). So a change saved in the admin panel shows on the site within about
+  a minute; reload once more if it hasn't. A new deployment starts with an empty cache. The
+  admin panel and sign in are never cached.
+- **Content-Security-Policy.** The site tells browsers where a page may load things from.
+  Scripts, styles and fonts come only from the site itself. Posts can show images, videos and
+  3D models from any `https://` address. The only embedded players allowed are YouTube and
+  Vimeo. Embedding any other player (or loading an outside script or font) needs a code change
+  in `vite.config.ts` (see the README); editors can't add one from the admin panel. Vercel's
+  comment toolbar on previews is blocked by the same rule, which does no harm.
+- **Uploaded photos are resized by Vercel** (Image Optimization) to the size each page needs.
+  Only photos in this project's `media` bucket are resized, at one quality, so nobody else can
+  bill their images to the club's account. The project is read from `SUPABASE_URL` while the
+  site is built; without it, photos load at full size.
+- **Site photos** in `static/images/archive` and `static/images/people` come with smaller
+  copies made by a script (see the README). They don't go through Vercel.
+- **Sign in and the contact form have rate limits** (Supabase guide, step 5.3, and the
+  README). They are counted in the database, so they hold across all of Vercel's servers.
+
 ## Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
 | `/api/health` says `"database":"error"` | Check `POSTGRES_URL` (or `DATABASE_URL`) exists for that environment, uses the pooler host on port 6543, and redeploy. |
 | Sign in on a preview lands on production | Add the preview wildcard to Supabase Redirect URLs (step 6). |
-| "Uploads are not set up yet" | `SUPABASE_SECRET_KEY` is missing for that environment. Redeploy after adding it. |
-| Admin settings page says auth isn't configured | `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY` is missing. |
+| "Uploads are not set up yet" | `SUPABASE_URL` or `SUPABASE_SECRET_KEY` is missing for that environment. Redeploy after adding it. |
+| The sign in page says "Sign in is not set up yet" | `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY` is missing for that environment. Add it and redeploy. |
+| A saved change doesn't show on the site | Public pages are cached for about a minute (step 9). Wait a minute and reload, twice if needed. |
+| Uploaded photos load at full size, not resized | `SUPABASE_URL` was missing when the site was built (step 9). Check it exists for that environment and redeploy. |
+| The browser console shows "Content-Security-Policy" errors | Something tried to load from a host the site doesn't allow (step 9). On previews, errors for `vercel.live` come from the Vercel toolbar and are harmless. |
 | Build log warns about Node 26 | Expected (see Node.js above). |
 | Pages are slow | Make sure the function region is Singapore (step 3) and Supabase is in Singapore. |
