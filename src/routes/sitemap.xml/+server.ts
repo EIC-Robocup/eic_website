@@ -91,10 +91,8 @@ ${entries
 </urlset>
 `;
 
+	// Cached on Vercel's CDN like the public pages (publicCache in src/hooks.server.ts).
 	return new Response(body, {
-		headers: {
-			'content-type': 'application/xml; charset=utf-8',
-			'cache-control': 'public, max-age=3600'
-		}
+		headers: { 'content-type': 'application/xml; charset=utf-8' }
 	});
 };

@@ -93,6 +93,36 @@ const authFallback: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
+/** Routes whose responses are the same for every visitor (no (site) load reads the user). */
+const SHARED_ROUTES = new Set(['/rss.xml', '/sitemap.xml']);
+
+/**
+ * Let Vercel's CDN keep public pages (and their __data.json) for a minute and serve a stale
+ * copy for ten more while it refreshes, so most views run no function and no queries. Editors'
+ * changes show on the site within about a minute. Only a response that is safe to share gets
+ * this: a GET or HEAD answered 200 on a public route, with no cookie and no cache header of its
+ * own. The one exception is Kit's `private, no-store` on __data.json, which it sets because a
+ * load might read cookies: no (site) load does, and hover preloads fetch these. /about's
+ * contact form token stays valid in a cached page: it must be at least 3 seconds and at most
+ * 24 hours old, and a cached copy is at most 11 minutes old.
+ */
+const publicCache: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+	const method = event.request.method;
+	const routeId: string = event.route.id ?? '';
+	if (
+		(method === 'GET' || method === 'HEAD') &&
+		response.status === 200 &&
+		(routeId.startsWith('/(site)') || SHARED_ROUTES.has(routeId)) &&
+		!response.headers.has('set-cookie') &&
+		(!response.headers.has('cache-control') ||
+			(event.isDataRequest && response.headers.get('cache-control') === 'private, no-store'))
+	) {
+		response.headers.set('cache-control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=600');
+	}
+	return response;
+};
+
 /** Baseline security headers for every response. */
 const securityHeaders: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
@@ -105,4 +135,4 @@ const securityHeaders: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handle = sequence(securityHeaders, authFallback, supabase, admin);
+export const handle = sequence(securityHeaders, publicCache, authFallback, supabase, admin);

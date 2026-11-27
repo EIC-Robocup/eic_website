@@ -57,10 +57,8 @@ export const GET: RequestHandler = async ({ url }) => {
 </rss>
 `;
 
+	// Cached on Vercel's CDN like the public pages (publicCache in src/hooks.server.ts).
 	return new Response(body, {
-		headers: {
-			'content-type': 'application/rss+xml; charset=utf-8',
-			'cache-control': 'public, max-age=600'
-		}
+		headers: { 'content-type': 'application/rss+xml; charset=utf-8' }
 	});
 };
