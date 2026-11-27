@@ -22,8 +22,9 @@ export function connectionString(): string | undefined {
 
 function isLocal(url: string): boolean {
 	try {
+		// new URL() keeps the brackets of an IPv6 host: postgres://u@[::1]/d has hostname "[::1]".
 		const host = new URL(url).hostname;
-		return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+		return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
 	} catch {
 		return false;
 	}
