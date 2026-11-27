@@ -350,22 +350,26 @@ export async function getPeopleCounts(): Promise<Pick<SiteCounts, 'people' | 'te
  * counted the same way as the People and Projects pages. Three queries, run together.
  */
 export async function getSiteCounts(): Promise<SiteCounts> {
+	// Async wrappers, not bare `db` chains: with no database URL, `db` throws synchronously,
+	// which would leave getPeopleCounts()'s rejection unhandled and crash the process.
 	const [peopleCounts, [projectCount], [latest]] = await Promise.all([
 		getPeopleCounts(),
-		db
-			.select({ n: sql<number>`count(*)::int` })
-			.from(projects)
-			.where(eq(projects.published, true)),
-		db
-			.select({
-				placement: achievements.placement,
-				entrants: achievements.entrants,
-				competition: achievements.competition,
-				year: achievements.year
-			})
-			.from(achievements)
-			.orderBy(desc(achievements.year), asc(achievements.sortOrder), asc(achievements.createdAt))
-			.limit(1)
+		(async () =>
+			db
+				.select({ n: sql<number>`count(*)::int` })
+				.from(projects)
+				.where(eq(projects.published, true)))(),
+		(async () =>
+			db
+				.select({
+					placement: achievements.placement,
+					entrants: achievements.entrants,
+					competition: achievements.competition,
+					year: achievements.year
+				})
+				.from(achievements)
+				.orderBy(desc(achievements.year), asc(achievements.sortOrder), asc(achievements.createdAt))
+				.limit(1))()
 	]);
 	return {
 		...peopleCounts,
