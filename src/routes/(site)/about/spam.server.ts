@@ -4,54 +4,21 @@
  * 1. A signed render time. The page carries `<issuedAt>.<hmac>`; a submission must bring
  *    it back unchanged, at least MIN_AGE after the page was rendered (bots post at once)
  *    and within MAX_AGE. The key is derived from a server secret, so it can't be forged.
- * 2. A per-IP limit kept in memory. On serverless each instance has its own memory,
- *    so this only slows a burst down; the per-email check in the database is the backstop.
+ * 2. A per-IP limit kept in memory. On serverless each instance has its own memory, so this
+ *    is only the fast path. The action also counts recent messages in the database by hashed
+ *    sender address, by email and in all, which holds across instances.
  *
  * The honeypot field is checked in the action.
  */
-import {
-	DATABASE_URL,
-	POSTGRES_URL,
-	SUPABASE_SECRET_KEY,
-	SUPABASE_SERVICE_ROLE_KEY
-} from '$app/env/private';
+import { hmacKey, toBase64Url } from '#lib/server/secret.ts';
 
 export const MIN_AGE_MS = 3_000;
 export const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const encoder = new TextEncoder();
 
-let keyPromise: Promise<CryptoKey> | undefined;
-
 /** HMAC key derived (HKDF) from a server secret, so the secret itself is never used directly. */
-function signingKey(): Promise<CryptoKey> {
-	keyPromise ??= (async () => {
-		const secret = SUPABASE_SECRET_KEY ?? SUPABASE_SERVICE_ROLE_KEY ?? DATABASE_URL ?? POSTGRES_URL;
-		// No secret at all (a build or a bare preview): a random key per instance still works,
-		// it just doesn't survive a cold start.
-		const material = secret ? encoder.encode(secret) : crypto.getRandomValues(new Uint8Array(32));
-		const base = await crypto.subtle.importKey('raw', material, 'HKDF', false, ['deriveKey']);
-		return crypto.subtle.deriveKey(
-			{
-				name: 'HKDF',
-				hash: 'SHA-256',
-				salt: encoder.encode('eic-chula'),
-				info: encoder.encode('contact-form-token-v1')
-			},
-			base,
-			{ name: 'HMAC', hash: 'SHA-256', length: 256 },
-			false,
-			['sign', 'verify']
-		);
-	})();
-	return keyPromise;
-}
-
-const toBase64Url = (bytes: ArrayBuffer) =>
-	btoa(String.fromCharCode(...new Uint8Array(bytes)))
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '');
+const signingKey = () => hmacKey('contact-form-token-v1');
 
 function fromBase64Url(text: string): Uint8Array<ArrayBuffer> | null {
 	if (!/^[A-Za-z0-9_-]{20,100}$/.test(text)) return null;

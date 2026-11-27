@@ -4,12 +4,21 @@ import { getPageSections } from '#lib/server/content.ts';
 import { db } from '#lib/server/db/index.ts';
 import { MESSAGE_TOPICS, messages, type MessageTopic } from '#lib/server/db/schema.ts';
 import { listAchievements, listArchivePhotos, listSponsors } from '#lib/server/queries/site.ts';
-import { FIELD, readValues, validate, type ContactFailure } from './contact.ts';
-import { checkToken, isRateLimited, issueToken, recordSend } from './spam.server.ts';
+import { clientHash } from '#lib/server/rate-limit.ts';
+import { FIELD, readValues, validate, type ContactFailure, type ContactValues } from './contact.ts';
+import { IP_MAX, checkToken, isRateLimited, issueToken, recordSend } from './spam.server.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Messages one email address may send in a day. */
 const EMAIL_DAILY_MAX = 20;
+/** Messages the whole site takes in an hour; past this the form points to the club's email. */
+const HOURLY_MAX = 60;
+
+/** Postgres refuses U+0000 in text, so a pasted NUL would turn a message into a 500. */
+function withoutNul(values: ContactValues): ContactValues {
+	const clean = (v: string) => v.replace(/\u0000/g, '');
+	return { name: clean(values.name), email: clean(values.email), topic: clean(values.topic), message: clean(values.message) };
+}
 
 /** A list the page can live without: log the error and show nothing. */
 async function optional<T>(label: string, read: () => Promise<T[]>): Promise<T[]> {
@@ -61,7 +70,7 @@ function clientAddress(getClientAddress: () => string): string {
 export const actions = {
 	default: async ({ request, getClientAddress }) => {
 		const data = await request.formData();
-		const values = readValues(data);
+		const values = withoutNul(readValues(data));
 		const submitted = data.get(FIELD.token);
 		const token = typeof submitted === 'string' ? submitted : '';
 
@@ -120,22 +129,43 @@ export const actions = {
 		if (isRateLimited(ip)) return failure(429, tooMany);
 
 		try {
-			const [{ sent }] = await db
-				.select({ sent: count() })
-				.from(messages)
-				.where(
-					and(
-						sql`lower(${messages.email}) = ${values.email.toLowerCase()}`,
-						gt(messages.createdAt, sql`now() - interval '1 day'`)
+			// The limits that hold across server instances: per sender address (hashed, never
+			// stored raw), per email and for the whole site.
+			const ipHash = await clientHash(ip);
+			const [[recent], [{ sent }]] = await Promise.all([
+				db
+					.select({
+						byClient: sql<number>`count(*) filter (where ${messages.ipHash} = ${ipHash} and ${messages.createdAt} > now() - interval '10 minutes')::int`,
+						total: sql<number>`count(*)::int`
+					})
+					.from(messages)
+					.where(gt(messages.createdAt, sql`now() - interval '1 hour'`)),
+				db
+					.select({ sent: count() })
+					.from(messages)
+					.where(
+						and(
+							sql`lower(${messages.email}) = ${values.email.toLowerCase()}`,
+							gt(messages.createdAt, sql`now() - interval '1 day'`)
+						)
 					)
-				);
-			if (sent >= EMAIL_DAILY_MAX) return failure(429, tooMany);
+			]);
+			if ((recent?.byClient ?? 0) >= IP_MAX || sent >= EMAIL_DAILY_MAX) return failure(429, tooMany);
+			if ((recent?.total ?? 0) >= HOURLY_MAX) {
+				return failure(429, {
+					errors: {},
+					formError: contact.personEmail
+						? `We are getting a lot of messages right now. Try again in an hour, or email us at ${contact.personEmail}.`
+						: 'We are getting a lot of messages right now. Try again in an hour.'
+				});
+			}
 
 			await db.insert(messages).values({
 				name: values.name,
 				email: values.email,
 				topic,
-				body: values.message
+				body: values.message,
+				ipHash
 			});
 		} catch (err) {
 			console.error('Contact form: could not save the message', err);
