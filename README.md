@@ -68,7 +68,7 @@ Do these in order:
 | `pnpm db:migrate` | Apply pending migrations to `DATABASE_URL` (`--dry-run` lists them) |
 | `pnpm db:seed` | Load the starter content in `supabase/seed.sql` (refuses on a seeded database; `--force` adds missing rows) |
 | `pnpm db:studio` | Drizzle Studio (set `DATABASE_URL_SESSION` to the session pooler URI with `?sslmode=require` at the end) |
-| `node scripts/resize-images.ts` | Make the smaller copies of the site photos (see "Site photos" below) |
+| `pnpm images:resize` | Make the smaller copies of the site photos (see "Site photos" below) |
 | `scripts/local-db.sh start` | A local Postgres 16 without Docker (`stop`, `status`, `url`, `reset --seed`) |
 
 `pnpm db:migrate` and `pnpm db:seed` use an encrypted connection for any database host but
@@ -185,9 +185,9 @@ next to each one and updates the `STATIC_PHOTOS` list in `src/lib/image.ts`, whi
 and `optimizedSrc()` read. After adding a photo there:
 
 ```bash
-node scripts/resize-images.ts           # make the missing copies
-node scripts/resize-images.ts --force   # after replacing a photo
-node scripts/resize-images.ts --check   # exit 1 if a copy or the list is out of date
+pnpm images:resize           # make the missing copies
+pnpm images:resize --force   # after replacing a photo
+pnpm images:resize --check   # exit 1 if a copy or the list is out of date
 ```
 
 Commit the copies and `src/lib/image.ts` with the photo.

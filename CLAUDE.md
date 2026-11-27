@@ -15,7 +15,7 @@ pnpm db:generate    # schema.ts -> new SQL migration in supabase/migrations
 pnpm db:migrate     # apply migrations to DATABASE_URL
 pnpm db:seed        # load supabase/seed.sql into DATABASE_URL (first-time content)
 pnpm preview:vercel # preview the build the way Vercel runs it (no require() of ES modules)
-node scripts/resize-images.ts  # smaller copies of new photos in static/images (--force, --check)
+pnpm images:resize  # smaller copies of new photos in static/images (--force, --check)
 ```
 
 Vercel's function runtime cannot `require()` an ES module, which Node 24 otherwise allows. A
@@ -87,7 +87,7 @@ load the pages that use it.
   `hit(await limitKey('scope', value), { max, windowSeconds })` from
   `#lib/server/rate-limit.ts`. Never store raw IPs or emails for it.
 - After adding or replacing a photo in `static/images/archive` or `static/images/people`, run
-  `node scripts/resize-images.ts` (`--force` after a replace) and commit the copies and
+  `pnpm images:resize` (`--force` after a replace) and commit the copies and
   `src/lib/image.ts`.
 
 ## Admin panel rules
