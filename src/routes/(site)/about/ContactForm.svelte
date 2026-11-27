@@ -5,8 +5,12 @@
 
 	Controls are the shadcn-svelte Field, Input, Textarea, Select and Button with the EIC sizes.
 	The topic is a native <select> in the server-rendered page and becomes the shadcn Select once
-	the page is interactive: the shadcn Select needs JavaScript to open, and this form must work
-	without it. The Select submits through its hidden input under the same name.
+	the page is interactive and its code has loaded (a separate chunk, so other pages and the
+	first load of this one don't carry it): the shadcn Select needs JavaScript to open, and this
+	form must work without it. The Select submits through its hidden input under the same name.
+
+	Errors are not alerts. After a send, focus moves to the first field with a problem (or to the
+	form's message), and each field's error is its description, so it is read once, with the field.
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
@@ -17,7 +21,6 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Field from '#lib/components/ui/field/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
-	import * as Select from '#lib/components/ui/select/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { cn } from '#lib/utils.js';
 	import {
@@ -61,8 +64,17 @@
 	let thanksHeading = $state<HTMLElement>();
 	let formErrorEl = $state<HTMLElement>();
 
+	type SelectModule = typeof import('#lib/components/ui/select/index.js');
+	let Select = $state<SelectModule | null>(null);
+
 	$effect(() => {
 		enhanced = true;
+		import('#lib/components/ui/select/index.js').then(
+			(module) => (Select = module),
+			() => {
+				// Offline or a stale deploy: the native select keeps working.
+			}
+		);
 	});
 
 	const ids = {
@@ -87,8 +99,11 @@
 	async function focusProblem() {
 		await tick();
 		const first = FIELD_ORDER.find((f) => errors[f]);
-		if (first) document.getElementById(ids[first])?.focus();
-		else if (formError) formErrorEl?.focus();
+		const target = first ? document.getElementById(ids[first]) : formError ? formErrorEl : null;
+		if (!target) return;
+		// Already focused (Enter pressed in that field): focus it afresh so its error is read.
+		if (document.activeElement === target) target.blur();
+		target.focus();
 	}
 
 	const submit: SubmitFunction = ({ formData, cancel }) => {
@@ -195,7 +210,6 @@
 			<p
 				bind:this={formErrorEl}
 				tabindex="-1"
-				role="alert"
 				class="col-span-full m-0 rounded-sm border border-brand-text/60 px-4 py-3 text-sm leading-[22px] text-ink"
 			>
 				{formError}
@@ -214,7 +228,7 @@
 				maxlength={LIMITS.name}
 				value={values.name}
 			/>
-			{#if errors.name}<Field.Error id={errorId('name')} class={errorClass}>{errors.name}</Field.Error>{/if}
+			{#if errors.name}<Field.Error id={errorId('name')} role={undefined} class={errorClass}>{errors.name}</Field.Error>{/if}
 		</Field.Field>
 
 		<Field.Field class={fieldClass}>
@@ -230,12 +244,12 @@
 				maxlength={LIMITS.email}
 				value={values.email}
 			/>
-			{#if errors.email}<Field.Error id={errorId('email')} class={errorClass}>{errors.email}</Field.Error>{/if}
+			{#if errors.email}<Field.Error id={errorId('email')} role={undefined} class={errorClass}>{errors.email}</Field.Error>{/if}
 		</Field.Field>
 
 		<Field.Field class={cn('col-span-full', fieldClass)}>
 			<Field.Label for={ids.topic} class={labelClass}>I am interested in</Field.Label>
-			{#if enhanced}
+			{#if Select}
 				<Select.Root type="single" name={FIELD.topic} required bind:value={topic}>
 					<Select.Trigger
 						{...fieldAttrs('topic')}
@@ -287,7 +301,7 @@
 				>
 			</div>
 			{/if}
-			{#if errors.topic}<Field.Error id={errorId('topic')} class={errorClass}>{errors.topic}</Field.Error>{/if}
+			{#if errors.topic}<Field.Error id={errorId('topic')} role={undefined} class={errorClass}>{errors.topic}</Field.Error>{/if}
 		</Field.Field>
 
 		<Field.Field class={cn('col-span-full', fieldClass)}>
@@ -302,7 +316,7 @@
 				maxlength={LIMITS.messageMax}
 				value={values.message}
 			/>
-			{#if errors.message}<Field.Error id={errorId('message')} class={errorClass}
+			{#if errors.message}<Field.Error id={errorId('message')} role={undefined} class={errorClass}
 					>{errors.message}</Field.Error
 				>{/if}
 		</Field.Field>
