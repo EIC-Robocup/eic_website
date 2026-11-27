@@ -1,5 +1,5 @@
 import { Marked, Renderer, type Token, type Tokens } from 'marked';
-import { isOptimizable, optimizedSrc, srcset } from '#lib/image.ts';
+import { isMediaUpload, optimizedSrc, srcset } from '#lib/image.ts';
 import { PH_END, PH_START, RenderContext, type Heading, type PostFeatures } from './markdown/context.ts';
 import { embedHtml, figcaption, mediaKind, modelHtml, parseEmbedUrl, videoHtml, type Embed } from './markdown/embeds.ts';
 import { blockExtensions, renderFootnotes } from './markdown/extensions.ts';
@@ -86,7 +86,9 @@ function cleanUrl(href: string | null | undefined): string | null {
 /** An <img> for a post, with srcset/sizes for media bucket photos. */
 function imgTag(src: string, alt: string, sizes = BODY_SIZES): string {
 	const set = srcset(src);
-	const size = isOptimizable(src) ? sizeFromUrl(src) : null;
+	// The size hint comes from the upload's file name, so it holds even where the photo is
+	// served as it is (no SUPABASE_URL at build time, or a local Supabase).
+	const size = isMediaUpload(src) ? sizeFromUrl(src) : null;
 	return (
 		`<img src="${escapeHtml(optimizedSrc(src, 1280))}"` +
 		(set ? ` srcset="${escapeHtml(set)}" sizes="${sizes}"` : '') +

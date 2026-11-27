@@ -51,6 +51,15 @@ export function isOptimizable(url: string | null | undefined): url is string {
 	return typeof url === 'string' && MEDIA_PREFIX !== null && url.startsWith(MEDIA_PREFIX) && !/[?#]/.test(url);
 }
 
+/**
+ * True for any public media bucket URL, whatever its host (also a local http Supabase, or a
+ * build without SUPABASE_URL). Upload file names carry the size (`-2400x1600.webp`), so this
+ * is enough for a width and height hint even where the photo can't be optimized.
+ */
+export function isMediaUpload(url: string | null | undefined): url is string {
+	return typeof url === 'string' && /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/media\/[^?#]+$/.test(url);
+}
+
 /** The pre-sized copies of a site photo, smallest first (the original last), or null. */
 function staticCopies(url: string): { url: string; width: number }[] | null {
 	const widths = Object.hasOwn(STATIC_PHOTOS, url) ? STATIC_PHOTOS[url] : undefined;
