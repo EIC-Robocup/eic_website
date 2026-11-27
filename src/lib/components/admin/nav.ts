@@ -1,10 +1,16 @@
 /** The admin sidebar's links, in the groups of the AdminNav design. */
 
-/** Counts the admin layout loads for the sidebar badges (null when the database is unreachable). */
+/**
+ * Counts the admin layout loads for the sidebar badges (null when the database is unreachable).
+ * Each badge counts every row of the list its link opens, drafts and hidden rows too, and
+ * matches the big number on the dashboard (DashboardCounts in #lib/server/queries/admin.ts).
+ */
 export type AdminCounts = {
+	/** Every project, published or not. */
 	projects: number;
+	/** Every post: drafts, scheduled and live. */
 	posts: number;
-	/** People with `visible` on. */
+	/** Everyone in /admin/people: members, advisors and alumni, hidden ones too. */
 	people: number;
 	achievements: number;
 	/** Inbox messages not read and not archived. */

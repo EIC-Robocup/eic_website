@@ -2,7 +2,7 @@
  * Read queries for the admin dashboard. Admin loads still call requireEditor first.
  * These see every row, published or not.
  */
-import { and, asc, count, desc, eq, inArray, isNull, max, min, notInArray, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull, max, min, sql } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import {
 	achievements,
@@ -11,17 +11,31 @@ import {
 	people,
 	posts,
 	projects,
-	teams,
 	type Activity,
 	type PostCategory
 } from '#lib/server/db/schema.ts';
-import { NON_TEAM_SLUGS } from '#lib/server/queries/site.ts';
+import { getPeopleCounts } from '#lib/server/queries/site.ts';
 
+/**
+ * The dashboard numbers. One definition for each, shared with the sidebar badges
+ * (src/routes/admin/(app)/+layout.server.ts) and the public site:
+ * - every `total` counts every row, like the sidebar badge and the admin list it opens;
+ * - what the public site shows is counted the way the site counts it: published projects,
+ *   live posts (published, publish time passed), and the People page's numbers.
+ */
 export type DashboardCounts = {
+	/** published: on the Projects page. */
 	projects: { total: number; ongoing: number; published: number };
-	posts: { total: number; published: number; drafts: number };
-	/** Members and advisors (alumni not counted); teams leave out NON_TEAM_SLUGS (Leadership). */
-	people: { total: number; teams: number; advisors: number };
+	/**
+	 * published: live on the blog (the Published tab in /admin/posts); scheduled: published
+	 * with a publish time still to come; drafts: not published.
+	 */
+	posts: { total: number; published: number; scheduled: number; drafts: number };
+	/**
+	 * total: everyone in /admin/people (every kind, hidden too). onSite, teams and advisors:
+	 * the public People page's numbers (getPeopleCounts in #lib/server/queries/site.ts).
+	 */
+	people: { total: number; onSite: number; teams: number; advisors: number };
 	/** firstYear and lastYear are null when there are no achievements. */
 	achievements: { count: number; firstYear: number | null; lastYear: number | null };
 	/** Inbox messages not read and not archived. */
@@ -50,7 +64,7 @@ async function countUnreadMessages(): Promise<number> {
 
 /** The four numbers on the dashboard, plus the unread inbox count. */
 export async function getDashboardCounts(): Promise<DashboardCounts> {
-	const [projectRow, postRow, personRow, teamRow, achievementRow, unread] = await Promise.all([
+	const [projectRow, postRow, personRow, onSite, achievementRow, unread] = await Promise.all([
 		db
 			.select({
 				total: count(),
@@ -61,21 +75,13 @@ export async function getDashboardCounts(): Promise<DashboardCounts> {
 		db
 			.select({
 				total: count(),
-				published: sql<number>`count(*) filter (where ${posts.status} = 'published')::int`,
+				published: sql<number>`count(*) filter (where ${posts.status} = 'published' and ${posts.publishedAt} <= now())::int`,
+				scheduled: sql<number>`count(*) filter (where ${posts.status} = 'published' and ${posts.publishedAt} > now())::int`,
 				drafts: sql<number>`count(*) filter (where ${posts.status} = 'draft')::int`
 			})
 			.from(posts),
-		db
-			.select({
-				total: count(),
-				advisors: sql<number>`count(*) filter (where ${people.kind} = 'advisor')::int`
-			})
-			.from(people)
-			.where(inArray(people.kind, ['member', 'advisor'])),
-		db
-			.select({ n: count() })
-			.from(teams)
-			.where(NON_TEAM_SLUGS.length ? notInArray(teams.slug, [...NON_TEAM_SLUGS]) : undefined),
+		db.select({ total: count() }).from(people),
+		getPeopleCounts(),
 		db
 			.select({ n: count(), first: min(achievements.year), last: max(achievements.year) })
 			.from(achievements),
@@ -91,12 +97,14 @@ export async function getDashboardCounts(): Promise<DashboardCounts> {
 		posts: {
 			total: postRow[0]?.total ?? 0,
 			published: postRow[0]?.published ?? 0,
+			scheduled: postRow[0]?.scheduled ?? 0,
 			drafts: postRow[0]?.drafts ?? 0
 		},
 		people: {
 			total: personRow[0]?.total ?? 0,
-			teams: teamRow[0]?.n ?? 0,
-			advisors: personRow[0]?.advisors ?? 0
+			onSite: onSite.people,
+			teams: onSite.teams,
+			advisors: onSite.advisors
 		},
 		achievements: {
 			count: achievementRow[0]?.n ?? 0,

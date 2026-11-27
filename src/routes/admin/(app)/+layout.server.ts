@@ -6,13 +6,16 @@ import { db } from '#lib/server/db/index.ts';
 import { achievements, messages, people, posts, projects } from '#lib/server/db/schema.ts';
 import type { LayoutServerLoad } from './$types';
 
-/** The sidebar badges, in one round trip. */
+/**
+ * The sidebar badges, in one round trip. Each counts every row of the list its link opens
+ * (drafts, unpublished and hidden rows too), the same as the dashboard's big numbers.
+ */
 async function loadCounts(): Promise<AdminCounts> {
 	const rows = await db.execute<Record<keyof AdminCounts, number | string | null>>(sql`
 		select
 			(select count(*) from ${projects})::int as projects,
 			(select count(*) from ${posts})::int as posts,
-			(select count(*) from ${people} where ${people.visible})::int as people,
+			(select count(*) from ${people})::int as people,
 			(select count(*) from ${achievements})::int as achievements,
 			(select count(*) from ${messages} where ${messages.readAt} is null and not ${messages.archived})::int as unread
 	`);

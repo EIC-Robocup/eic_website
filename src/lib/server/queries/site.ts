@@ -6,7 +6,7 @@
  * Errors (for example an unreachable database) are not caught here: wrap a call
  * in try/catch in the load if the page should still render without it.
  */
-import { and, asc, desc, eq, inArray, isNotNull, lte, ne, notInArray, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, lte, ne, notInArray, sql, type SQL } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import {
 	achievements,
@@ -317,15 +317,6 @@ export async function listFeaturedPeople(): Promise<PersonCard[]> {
 	return rows.map(toPersonCard);
 }
 
-/** Visible members and advisors (alumni not counted). */
-export async function countVisiblePeople(): Promise<number> {
-	const [row] = await db
-		.select({ n: sql<number>`count(*)::int` })
-		.from(people)
-		.where(and(eq(people.visible, true), inArray(people.kind, ['member', 'advisor'])));
-	return row?.n ?? 0;
-}
-
 /* ------------------------------------------------------------------------- */
 /* Site numbers                                                               */
 /* ------------------------------------------------------------------------- */
@@ -333,22 +324,37 @@ export async function countVisiblePeople(): Promise<number> {
 export type { SiteCounts };
 
 /**
+ * The public People numbers, counted exactly like the People page (listPeopleByTeam):
+ * - people: visible members and advisors (alumni are listed apart and not counted);
+ * - teams: teams with at least one visible member, leaving out NON_TEAM_SLUGS (Leadership);
+ * - advisors: visible advisors.
+ * The admin dashboard shows the same numbers as "on the site".
+ */
+export async function getPeopleCounts(): Promise<Pick<SiteCounts, 'people' | 'teams' | 'advisors'>> {
+	const countedTeam = NON_TEAM_SLUGS.length ? notInArray(teams.slug, [...NON_TEAM_SLUGS]) : sql`true`;
+	const [counts] = await db
+		.select({
+			people: sql<number>`count(*) filter (where ${people.kind} in ('member', 'advisor'))::int`,
+			advisors: sql<number>`count(*) filter (where ${people.kind} = 'advisor')::int`,
+			teams: sql<number>`count(distinct ${people.teamId}) filter (where ${people.kind} = 'member' and ${countedTeam})::int`
+		})
+		.from(people)
+		.leftJoin(teams, eq(people.teamId, teams.id))
+		.where(eq(people.visible, true));
+	return { people: counts?.people ?? 0, teams: counts?.teams ?? 0, advisors: counts?.advisors ?? 0 };
+}
+
+/**
  * The numbers the home page strip can show (see resolveStats in #lib/content/stats.ts),
- * counted the same way as the People and Projects pages. Two queries, run together.
+ * counted the same way as the People and Projects pages. Three queries, run together.
  */
 export async function getSiteCounts(): Promise<SiteCounts> {
-	const countedTeam = NON_TEAM_SLUGS.length ? notInArray(teams.slug, [...NON_TEAM_SLUGS]) : sql`true`;
-	const [[counts], [latest]] = await Promise.all([
+	const [peopleCounts, [projectCount], [latest]] = await Promise.all([
+		getPeopleCounts(),
 		db
-			.select({
-				people: sql<number>`count(*) filter (where ${people.kind} in ('member', 'advisor'))::int`,
-				advisors: sql<number>`count(*) filter (where ${people.kind} = 'advisor')::int`,
-				teams: sql<number>`count(distinct ${people.teamId}) filter (where ${people.kind} = 'member' and ${countedTeam})::int`,
-				projects: sql<number>`(select count(*) from ${projects} where ${projects.published})::int`
-			})
-			.from(people)
-			.leftJoin(teams, eq(people.teamId, teams.id))
-			.where(eq(people.visible, true)),
+			.select({ n: sql<number>`count(*)::int` })
+			.from(projects)
+			.where(eq(projects.published, true)),
 		db
 			.select({
 				placement: achievements.placement,
@@ -361,10 +367,8 @@ export async function getSiteCounts(): Promise<SiteCounts> {
 			.limit(1)
 	]);
 	return {
-		people: counts?.people ?? 0,
-		teams: counts?.teams ?? 0,
-		advisors: counts?.advisors ?? 0,
-		projects: counts?.projects ?? 0,
+		...peopleCounts,
+		projects: projectCount?.n ?? 0,
 		latestResult: latest ?? null
 	};
 }
