@@ -145,7 +145,9 @@
 				action={resetAction}
 				id={sectionKey}
 				title="Reset {def.title} to the default copy?"
-				description="The saved text{def.toggleable ? ' and switch' : ''} for this section are removed and the page shows the designed default again. Unpublished changes in other sections stay as they are."
+				description="{def.toggleable
+					? 'The saved text and the Show on page switch for this section are removed'
+					: 'The saved text for this section is removed'} and the page shows the designed default again. Unpublished changes in other sections stay as they are."
 				confirmLabel="Reset section"
 				success="Section reset to the default copy."
 				disabled={!saved}
