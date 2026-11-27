@@ -226,7 +226,7 @@ export const pages = {
 					eyebrow: 'Join us',
 					heading: 'Build the next Walkie with us.',
 					primaryCta: link('Join EIC', '/about#join'),
-					secondaryCta: link('Partner with us', '/about#join')
+					secondaryCta: link('Partner with us', '/about#partner')
 				}
 			})
 		}
