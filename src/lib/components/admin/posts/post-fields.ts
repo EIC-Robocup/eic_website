@@ -20,9 +20,13 @@ export const LIMITS = {
 /** Lower case letters and digits in groups joined by single hyphens: `how-walkie-picks-up-a-can`. */
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-/** A URL slug from a title. Empty when the title has no Latin letters or digits (e.g. Thai only). */
+/**
+ * A URL slug from a title. Empty when the title has no Latin letters (e.g. Thai, with or
+ * without numbers): a slug of only digits ("2", then "2-2") says nothing, so the server gives
+ * such posts a dated slug (post-20261127) instead. A slug typed by hand may still be all digits.
+ */
 export function slugify(text: string): string {
-	return text
+	const slug = text
 		.toLowerCase()
 		.normalize('NFKD')
 		.replace(/[̀-ͯ]/g, '')
@@ -33,6 +37,7 @@ export function slugify(text: string): string {
 		.replace(/^-+|-+$/g, '')
 		.slice(0, LIMITS.slug)
 		.replace(/-+$/g, '');
+	return /[a-z]/.test(slug) ? slug : '';
 }
 
 /** Bytes of a string in UTF-8 (Thai is 3 bytes a character). */
