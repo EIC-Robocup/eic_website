@@ -34,8 +34,24 @@ const TABLES = [
 	'sponsors'
 ] as const;
 
+/**
+ * TLS for every host but this machine, like the app's own client (src/lib/server/db/index.ts):
+ * postgres.js sends everything in plain text unless asked, and the Supabase connection strings
+ * carry no sslmode. An sslmode in the URL (e.g. verify-full) or PGSSLMODE still wins.
+ */
+function sslFor(connection: string): false | 'require' | undefined {
+	let parsed: URL;
+	try {
+		parsed = new URL(connection);
+	} catch {
+		return 'require';
+	}
+	if (parsed.searchParams.has('sslmode') || parsed.searchParams.has('ssl') || process.env.PGSSLMODE) return undefined;
+	return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(parsed.hostname) ? false : 'require';
+}
+
 // max: 1 lets the file's own begin/commit run on a single connection.
-const sql = postgres(url, { prepare: false, max: 1, connect_timeout: 15, onnotice: () => {} });
+const sql = postgres(url, { prepare: false, max: 1, connect_timeout: 15, ssl: sslFor(url), onnotice: () => {} });
 
 async function counts(): Promise<Record<string, number>> {
 	const out: Record<string, number> = {};
