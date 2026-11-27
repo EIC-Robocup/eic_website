@@ -35,7 +35,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 	});
 };
 
-/** Paths under /admin that work without being signed in. */
+/** Admin routes (by route id) that work without being signed in. */
 const PUBLIC_ADMIN_PATHS = new Set(['/admin/login', '/admin/logout']);
 
 /**
@@ -45,7 +45,10 @@ const PUBLIC_ADMIN_PATHS = new Set(['/admin/login', '/admin/logout']);
  */
 const admin: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
-	const isAdmin = path === '/admin' || path.startsWith('/admin/');
+	// Kit matches routes on the decoded path, so /%61dmin/... reaches the admin routes: test
+	// the matched route as well as the raw path.
+	const routeId: string = event.route.id ?? '';
+	const isAdmin = routeId.startsWith('/admin/') || path === '/admin' || path.startsWith('/admin/');
 	if (!isAdmin) return resolve(event);
 
 	const user = await event.locals.getUser();
@@ -58,9 +61,11 @@ const admin: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	const isPublic = PUBLIC_ADMIN_PATHS.has(path);
+	// The public pages' route ids equal their paths. An unmatched path (a 404) is never public.
+	const isPublic = PUBLIC_ADMIN_PATHS.has(routeId);
 	const changesData = event.request.method !== 'GET' && event.request.method !== 'HEAD';
-	if (!event.locals.editor && !isPublic && (changesData || path.startsWith('/admin/api/'))) {
+	const isApi = routeId.startsWith('/admin/(app)/api/') || path.startsWith('/admin/api/');
+	if (!event.locals.editor && !isPublic && (changesData || isApi)) {
 		return new Response('Sign in to continue.', {
 			status: 401,
 			headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }
