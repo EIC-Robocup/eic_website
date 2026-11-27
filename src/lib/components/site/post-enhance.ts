@@ -208,6 +208,14 @@ function litePlayers(root: HTMLElement): Cleanup {
 		}
 		poster.replaceWith(button);
 
+		// A thumbnail that cannot load (i.ytimg.com blocked, offline) goes, so the poster shows
+		// its own surface with the play button and title (post.css).
+		const thumb = button.querySelector<HTMLImageElement>('img.embed-thumb');
+		if (thumb) {
+			if (thumb.complete && thumb.naturalWidth === 0) thumb.remove();
+			else thumb.addEventListener('error', () => thumb.remove(), { once: true });
+		}
+
 		const warm = () => preconnect(player.origin);
 		button.addEventListener('pointerenter', warm, { once: true });
 		button.addEventListener('focus', warm, { once: true });

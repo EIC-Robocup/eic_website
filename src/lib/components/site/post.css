@@ -838,6 +838,18 @@
 	outline: 2px solid var(--eic-focus);
 	outline-offset: 2px;
 }
+/*
+ * The poster's own surface: a fine grid on surface-200. YouTube's thumbnail covers it; Vimeo
+ * posters have none, and a thumbnail that cannot load (blocked, offline) leaves it showing.
+ */
+.post-body .embed-poster,
+.post-body .embed-thumb::after {
+	background-color: var(--eic-surface-200);
+	background-image:
+		linear-gradient(var(--eic-draft-grid) 1px, transparent 1px),
+		linear-gradient(90deg, var(--eic-draft-grid) 1px, transparent 1px);
+	background-size: 24px 24px;
+}
 .post-body .embed-thumb {
 	position: absolute;
 	inset: 0;
@@ -845,12 +857,11 @@
 	height: 100%;
 	object-fit: cover;
 }
-.post-body .embed-vimeo .embed-poster {
-	background-color: var(--eic-surface-200);
-	background-image:
-		linear-gradient(var(--eic-draft-grid) 1px, transparent 1px),
-		linear-gradient(90deg, var(--eic-draft-grid) 1px, transparent 1px);
-	background-size: 24px 24px;
+/* Browsers draw ::after only on an image that failed: it hides the broken image icon. */
+.post-body .embed-thumb::after {
+	content: '';
+	position: absolute;
+	inset: 0;
 }
 .post-body .embed-play {
 	position: absolute;
