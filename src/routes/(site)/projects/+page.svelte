@@ -126,7 +126,7 @@
 	<section
 		id="publications"
 		aria-labelledby="papers-title"
-		class="scroll-mt-20 bg-surface-000 py-16 md:py-[104px]"
+		class="bg-surface-000 py-16 md:py-[104px]"
 	>
 		<div class="site-container flex flex-wrap gap-12">
 			<div class="flex min-w-0 flex-[1_1_280px] flex-col gap-5 sm:max-w-[360px]">

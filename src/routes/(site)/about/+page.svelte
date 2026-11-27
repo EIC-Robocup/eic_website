@@ -74,8 +74,9 @@
 			.join(' ')
 	);
 
+	/** 44px tap area; the negative margin keeps the card's spacing as it was. */
 	const linkClass =
-		'text-[15px] leading-[23px] font-medium text-brand-text no-underline transition-colors duration-150 hover:text-ink';
+		'-my-2.5 inline-flex min-h-11 items-center self-start text-[15px] leading-[23px] font-medium text-brand-text no-underline transition-colors duration-150 hover:text-ink';
 </script>
 
 <Seo
@@ -156,7 +157,7 @@
 	<section
 		id="achievements"
 		aria-labelledby="achievements-title"
-		class="scroll-mt-16 bg-surface-000 py-16 md:scroll-mt-[72px] md:py-24"
+		class="bg-surface-000 py-16 md:py-24"
 	>
 		<div class="site-container flex flex-col gap-10">
 			<SectionHeader
@@ -225,7 +226,7 @@
 	<section
 		id="join"
 		aria-labelledby="join-title"
-		class="scroll-mt-16 bg-surface-000 py-16 md:scroll-mt-[72px] md:py-24"
+		class="bg-surface-000 py-16 md:py-24"
 	>
 		<div class="site-container flex flex-col gap-10">
 			<SectionHeader id="join-title" no={numbers.join} label={join.eyebrow} title={join.heading} />
@@ -268,7 +269,7 @@
 				<!-- Partners -->
 				<div
 					id="partner"
-					class="relative flex min-h-[300px] scroll-mt-16 flex-col gap-[18px] overflow-hidden rounded-lg border border-line bg-surface-200 p-7 sm:p-10 md:scroll-mt-[72px]"
+					class="relative flex min-h-[300px] flex-col gap-[18px] overflow-hidden rounded-lg border border-line bg-surface-200 p-7 sm:p-10"
 				>
 					<GearDrawing
 						class="absolute -right-14 -bottom-14 w-[220px] opacity-40 sm:-right-[70px] sm:-bottom-20 sm:w-80 sm:opacity-55"
@@ -348,7 +349,7 @@
 	<section
 		id="contact"
 		aria-labelledby="contact-title"
-		class="site-container flex scroll-mt-16 flex-wrap gap-14 py-16 md:scroll-mt-[72px] md:py-24"
+		class="site-container flex flex-wrap gap-14 py-16 md:py-24"
 	>
 		<div class="flex max-w-[460px] min-w-0 flex-[1_1_340px] flex-col gap-6">
 			<SectionLabel no={numbers.contact} label={contact.eyebrow} />
@@ -388,7 +389,7 @@
 							<dd class="m-0">
 								<a
 									href="mailto:{contact.personEmail}"
-									class="text-base leading-6 break-all text-brand-text transition-colors duration-150 hover:text-ink"
+									class="-my-2.5 inline-flex min-h-11 items-center text-base leading-6 break-all text-brand-text transition-colors duration-150 hover:text-ink"
 									>{contact.personEmail}</a
 								>
 							</dd>

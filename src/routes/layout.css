@@ -155,6 +155,15 @@
 	}
 	html {
 		@apply bg-background font-sans text-foreground antialiased;
+		/*
+		 * Keep whatever the browser scrolls to (a focused control, a #link target) clear of the
+		 * sticky site header: 65px tall below 768px, 73px from 768px up, plus room for the 2px
+		 * focus ring and its 2px offset. Below 768px this also clears the admin's 57px top bar.
+		 */
+		scroll-padding-top: 72px;
+		@media (width >= 48rem) {
+			scroll-padding-top: 80px;
+		}
 	}
 	body {
 		@apply min-h-dvh bg-background text-foreground;

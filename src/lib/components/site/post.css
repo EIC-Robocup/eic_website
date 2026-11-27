@@ -56,7 +56,7 @@
 	color: var(--eic-ink);
 	font-family: var(--font-display);
 	font-weight: 600;
-	scroll-margin-top: 96px;
+	scroll-margin-top: 16px; /* on top of html scroll-padding-top (layout.css) */
 	text-wrap: balance;
 }
 .post-body h2 {
@@ -97,14 +97,18 @@
 	}
 }
 
-/* Anchor link added by post-enhance.ts: shows on hover and focus. */
+/*
+ * Anchor link added by post-enhance.ts: shows on hover and focus. A 44px tap area; the
+ * negative block margins keep the heading's line as tall as a 32px link made it.
+ */
 .post-body .heading-anchor {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 32px;
-	min-height: 32px;
-	margin-left: 4px;
+	min-width: 44px;
+	min-height: 44px;
+	margin-block: -6px;
+	margin-left: -2px;
 	vertical-align: middle;
 	border-radius: 6px;
 	color: var(--eic-ink-muted);
@@ -1097,7 +1101,7 @@
 }
 .post-body .fn-ref,
 .post-body .footnotes li {
-	scroll-margin-top: 96px;
+	scroll-margin-top: 16px; /* on top of html scroll-padding-top (layout.css) */
 }
 .post-body .footnotes {
 	margin-top: 56px;
