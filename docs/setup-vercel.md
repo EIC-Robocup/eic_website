@@ -27,6 +27,10 @@ GitHub organization (or an org owner to approve). About 20 minutes, plus DNS tim
    "First deploy"), `main` is still the starter scaffold and this build fails with
    `env_invalid ... DATABASE_URL`. That is expected: it goes green once `feat/v1` is merged
    (step 4). After the merge it builds without variables, but has no database until step 2.
+   Until then the home page and `/about` show their designed copy with empty lists, and the
+   other pages (projects, people, the blog, `/rss.xml` and `/sitemap.xml`) answer with the
+   "Something went wrong" page, which is never cached. This is normal: they work once step 2
+   is done and the site is redeployed.
 
 Production branch: `main` (Vercel uses the repo's default branch). Pushes to `feat/v1` and pull
 requests become **preview** deployments. Branches named `claude/*` are not deployed
@@ -85,6 +89,7 @@ Supabase guide), mark the keys **Sensitive**, and tick Production and Preview:
 | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` |
 | `SUPABASE_SECRET_KEY` | `sb_secret_...` |
 | `ADMIN_EMAILS` | your email |
+| `CRON_SECRET` | Optional but recommended, as in the table above (Production only) |
 
 ### Preview deployments and the database
 
@@ -214,6 +219,7 @@ behaviour is no surprise.
 | Symptom | Fix |
 | --- | --- |
 | `/api/health` says `"database":"error"` | Check `POSTGRES_URL` (or `DATABASE_URL`) exists for that environment, uses the pooler host on port 6543, and redeploy. |
+| The home page shows no projects or people, and Projects, People and Blog say "Something went wrong" | The site can't reach the database: same fix as the row above. |
 | Sign in on a preview lands on production | Add the preview wildcard to Supabase Redirect URLs (step 6). |
 | "Uploads are not set up yet" | `SUPABASE_URL` or `SUPABASE_SECRET_KEY` is missing for that environment. Redeploy after adding it. |
 | The sign in page says "Sign in is not set up yet" | `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY` is missing for that environment. Add it and redeploy. |
