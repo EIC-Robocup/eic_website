@@ -132,14 +132,15 @@ All props are documented in each file's JSDoc. Quick reference:
 | `FormField` | label + control + hint + error | `label`, `hint?`, `error?`, `optional?`, `hideLabel?`, `id?`, snippet `children(attrs)` |
 | `ToggleRow` | labelled switch (Visibility panels) | `label`, `hint?`, `name?`, `bind:checked`, `divided?` |
 | `TagsInput` | chips | `bind:tags`, `name?`, `max?` (30), `maxLength?` (40), `placeholder?` |
-| `ImageField` | upload / link an image | `folder`, `name?`, `bind:url`, `bind:alt`, `label?`, `hint?`, `error?`, `aspect?` ("16 / 10"), `variant: 'drop'\|'avatar'`, `initials?`, `showAlt?`, `allowUrl?`, `compact?`, `bind:uploading`, `onupload?` |
+| `ImageField` | upload / link an image | `folder`, `name?`, `bind:url`, `bind:alt`, `label?`, `hint?`, `error?`, `aspect?` ("16 / 10"), `variant: 'drop'\|'avatar'`, `initials?`, `showAlt?`, `allowUrl?`, `compact?`, `accept?`, `disabled?`, `qualityOption?`, `bind:keepOriginal`, `bind:uploading`, `onupload?`, `onchange?` |
 | `ListEditor` | repeatable rows | `bind:items`, `create`, snippet `row(item, index)`, `name?`, `itemLabel?`, `max?`, `min?`, `numbered?`, `reorderable?`, `rowClass?`, snippets `header`, `empty`, `addPosition`, `bind:this` → `add()` |
 | `ConfirmDelete` | delete with an alert dialog | `action`, `id`, `idName?`, `fields?`, `title`, `description?`, `triggerLabel?`, `variant: 'text'\|'outline'`, snippet `trigger(props)`, `confirmLabel?`, `success?`, `ondeleted?` |
 | `EmptyState` | nothing here yet | `title`, `description?`, `icon?` (a Lucide component), `compact?`, snippet `actions` |
 
 Also: `AdminSidebar`, `AdminTopBar`, `BrandMark`, `AuthCard` (used by the shell and sign in),
 `nav.ts` (`ADMIN_NAV`, `isActiveAdminPath`, `AdminCounts`), `upload.ts` (`uploadFile`,
-`prepareImage`, `checkFile`, `UPLOAD_FOLDERS`), `styles.ts`, `form-data.ts`.
+`compressImage`, `checkFile`, `acceptAttribute`, `savings`, `UPLOAD_FOLDERS`; see section 5),
+`styles.ts`, `form-data.ts`.
 
 ### What each control submits
 
@@ -161,12 +162,53 @@ years), `textareaClass`, `selectTriggerClass`, plus `labelClass` and `hintClass`
 
 ## 5. Uploads
 
-`ImageField` uploads through `POST /admin/api/upload` (multipart: `file`, `folder`, optional
-`alt`; answers `{ id, url, path, filename, mimeType, size }` or `{ message }`). Folders:
-`projects`, `posts`, `people`, `pages`, `archive`, `sponsors`, `media`. Every upload also gets a
-`media` row and an activity entry. PNG, JPEG, WebP, GIF, AVIF and PDF only (no SVG). Vercel
-caps request bodies at 4.5 MB, so JPEG/PNG/WebP photos are resized in the browser (2560px,
-WebP) before sending; anything still over 4 MB is refused with a clear message.
+Call `uploadFile(file, { folder, alt?, keepOriginal?, onProgress?, signal? })` from `upload.ts`
+(`ImageField`, the Media library's `UploadQueue` in `media/uploads.svelte.ts` and the post
+editor already do). It resolves to `{ id, url, path, filename, mimeType, size, originalSize,
+width?, height?, alt, compressed }` and rejects with an `UploadError` whose message fits a
+toast (or an `AbortError` when `signal` aborts). `savings(media)` gives "4.2 MB → 380 KB".
+The file never passes through Vercel, so its 4.5 MB request limit doesn't apply:
+
+1. **Check and compress in the browser.** `checkFile` refuses unknown types (by MIME type, or
+   by extension for `.glb`/`.gltf`, which browsers report as empty). `compressImage` resizes
+   JPEG, PNG and WebP to at most 2400 px on the long side and re-encodes them as WebP (0.82),
+   applying the EXIF orientation and dropping metadata such as GPS. Without a WebP encoder
+   (older Safari) it uses JPEG, or PNG when there is transparency. GIF (animation) and AVIF
+   are left as they are, and a file is never made bigger. `keepOriginal` ("Keep original
+   quality") skips the resize and re-encode; JPEGs still lose their metadata, and a rotated
+   JPEG is re-encoded upright (JPEG 0.95).
+2. **Ask for a signed upload URL.** `POST /admin/api/upload` with JSON
+   `{ filename, mimeType, size, folder, width?, height? }`. The server checks the folder, the
+   type and that type's size limit, and answers `{ path, signedUrl, token, publicUrl,
+   mimeType, maxBytes }`. The path is `<folder>/<stamp>-<random>-<name>[-WxH].<ext>`.
+3. **PUT the file to Supabase Storage.** `XMLHttpRequest` (for progress) to `signedUrl`, the
+   same request supabase-js `uploadToSignedUrl` makes, with the type the server settled on and
+   `x-upsert: false`. The CSP's `connect-src https:` allows it.
+4. **Record it.** `POST /admin/api/upload/complete` with
+   `{ path, filename, mimeType, size, width?, height?, alt? }`. The server checks the path is
+   one it hands out and that the stored object exists with an allowed type and size (it deletes
+   a file that fails), then writes the `media` row and an activity entry and answers 201
+   `{ id, url, path, filename, mimeType, size, width, height, alt }`. A retry for the same path
+   answers the same row.
+
+Errors from both endpoints are `{ message, errors? }` with 400 (invalid), 401 (signed out),
+413 (request too large), 500 (unexpected), 502 (Storage refused) or 503 (`SUPABASE_URL` or
+`SUPABASE_SECRET_KEY` missing). The old multipart `POST /admin/api/upload` (`file`, `folder`,
+`alt`) still works for files under Vercel's 4.5 MB limit; don't use it in new code.
+
+| Kind | Types | Limit (after compression) |
+| --- | --- | --- |
+| Images | PNG, JPEG, WebP, GIF, AVIF (no SVG) | 10 MB |
+| Documents | PDF | 20 MB |
+| 3D models | GLB, glTF | 25 MB |
+| Video | MP4, WebM | 50 MB |
+
+Folders (`UPLOAD_FOLDERS`): `projects`, `posts`, `people`, `pages`, `archive`, `sponsors`,
+`media`. The limits live in `UPLOAD_LIMITS` (upload.ts) and `UPLOAD_RULES`
+(`src/lib/server/storage.ts`); keep them, the `media_bucket_types` migration and
+`[storage.buckets.media]` in `supabase/config.toml` in step. Show media photos through
+`optimizedSrc()` / `srcset()` from `#lib/image.ts`, which resize them with Vercel Image
+Optimization.
 
 ## 6. Gotchas
 
