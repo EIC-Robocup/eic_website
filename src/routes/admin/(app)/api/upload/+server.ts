@@ -12,6 +12,7 @@ import {
 	uploadMedia
 } from '#lib/server/storage.ts';
 import { storageConfigured } from '#lib/server/supabase.ts';
+import { parseSubmittedJson, stripNul } from '#lib/components/admin/form-data.ts';
 import { UPLOAD_FOLDERS } from '#lib/components/admin/upload.ts';
 import type { RequestHandler } from './$types';
 
@@ -57,7 +58,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const text = await request.text();
 		if (text.length > 4096) return problem(413, 'The upload request is too large.');
-		body = JSON.parse(text) as Record<string, unknown>;
+		body = parseSubmittedJson(text) as Record<string, unknown>;
 		if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('not an object');
 	} catch {
 		return problem(400, 'Send the upload details as JSON: filename, mimeType, size and folder.');
@@ -124,7 +125,7 @@ async function multipartUpload(request: Request, editor: SessionEditor): Promise
 	const file = form.get('file');
 	const folder = String(form.get('folder') ?? '');
 	const altRaw = form.get('alt');
-	const alt = typeof altRaw === 'string' ? altRaw.trim().slice(0, 300) : '';
+	const alt = typeof altRaw === 'string' ? stripNul(altRaw).trim().slice(0, 300) : '';
 
 	if (!(UPLOAD_FOLDERS as readonly string[]).includes(folder)) {
 		return problem(400, `Unknown upload folder. Use one of: ${UPLOAD_FOLDERS.join(', ')}.`);
@@ -147,7 +148,7 @@ async function multipartUpload(request: Request, editor: SessionEditor): Promise
 			.values({
 				path: uploaded.path,
 				url: uploaded.url,
-				filename: uploaded.filename.slice(0, 300),
+				filename: stripNul(uploaded.filename).slice(0, 300),
 				mimeType: uploaded.mimeType,
 				size: uploaded.size,
 				alt,

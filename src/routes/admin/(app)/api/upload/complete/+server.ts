@@ -14,6 +14,7 @@ import {
 	typeForPath
 } from '#lib/server/storage.ts';
 import { storageConfigured } from '#lib/server/supabase.ts';
+import { parseSubmittedJson } from '#lib/components/admin/form-data.ts';
 import { UPLOAD_FOLDERS } from '#lib/components/admin/upload.ts';
 import type { RequestHandler } from './$types';
 
@@ -59,7 +60,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const text = await request.text();
 		if (text.length > 8192) return problem(413, 'The request is too large.');
-		body = JSON.parse(text) as Record<string, unknown>;
+		body = parseSubmittedJson(text) as Record<string, unknown>;
 		if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('not an object');
 	} catch {
 		return problem(400, 'Send the upload details as JSON.');

@@ -3,7 +3,7 @@
  * editor share, and the writes (in transactions, so only one project is ever featured).
  */
 import { and, asc, count, eq, ne, sql } from 'drizzle-orm';
-import { readBool, readTags, readText } from '#lib/components/admin/form-data.ts';
+import { parseSubmittedJson, readBool, readTags, readText } from '#lib/components/admin/form-data.ts';
 import { LIMITS, type ProjectInput, type ProjectValues } from '#lib/components/admin/projects/project-form.ts';
 import { db } from '#lib/server/db/index.ts';
 import { posts, projects } from '#lib/server/db/schema.ts';
@@ -23,7 +23,7 @@ function readJsonField(form: FormData, name: string): unknown {
 	if (raw === null || raw === '') return [];
 	if (typeof raw !== 'string' || raw.length > 200_000) return undefined;
 	try {
-		return JSON.parse(raw);
+		return parseSubmittedJson(raw);
 	} catch {
 		return undefined;
 	}

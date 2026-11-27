@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { getProjectBySlug } from '#lib/server/queries/site.ts';
 import { PROJECT_STATUS_LABELS, labelFor } from '#lib/content/labels.ts';
 import { projectCategoryLabel } from '#lib/components/site/format.ts';
+import { SLUG_PATTERN } from '#lib/components/admin/projects/project-form.ts';
 import { cardMeta, isGitHub } from '../project-meta.ts';
 import type { PageServerLoad } from './$types';
 
@@ -11,6 +12,9 @@ const PARTS_PHOTO = /\bparts\b/i;
 const clean = (v: string | null | undefined) => v?.trim() || '';
 
 export const load: PageServerLoad = async ({ params }) => {
+	// Every saved slug matches the pattern, so anything else (a NUL byte, which Postgres
+	// refuses with a 500) can be a 404 without asking the database.
+	if (!SLUG_PATTERN.test(params.slug)) error(404, 'Project not found');
 	const project = await getProjectBySlug(params.slug);
 	if (!project) error(404, 'Project not found');
 

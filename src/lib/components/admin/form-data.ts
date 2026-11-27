@@ -12,10 +12,34 @@
  *     const systems = readJson(form, 'systems');        // ListEditor name="systems"
  */
 
+/**
+ * `value` without NUL characters. Postgres refuses U+0000 in text and jsonb, so one pasted
+ * from a PDF would otherwise turn a save into a 500. Every reader here applies it.
+ */
+export function stripNul(value: string): string {
+	return value.includes('\u0000') ? value.replace(/\u0000/g, '') : value;
+}
+
+/**
+ * JSON.parse for submitted JSON: strings lose NUL characters (JSON can carry them as \u0000),
+ * and object keys that contain one are dropped. Throws on malformed JSON, like JSON.parse.
+ */
+export function parseSubmittedJson(raw: string): unknown {
+	return JSON.parse(raw, (_key, value: unknown) => {
+		if (typeof value === 'string') return stripNul(value);
+		if (value && typeof value === 'object' && !Array.isArray(value)) {
+			for (const key of Object.keys(value)) {
+				if (key.includes('\u0000')) delete (value as Record<string, unknown>)[key];
+			}
+		}
+		return value;
+	});
+}
+
 /** A trimmed string ('' when missing). */
 export function readText(form: FormData, name: string, { max = 10_000 }: { max?: number } = {}): string {
 	const value = form.get(name);
-	return typeof value === 'string' ? value.trim().slice(0, max) : '';
+	return typeof value === 'string' ? stripNul(value).trim().slice(0, max) : '';
 }
 
 /** A trimmed string, or null when empty. For nullable text columns. */
@@ -42,7 +66,7 @@ export function readTags(form: FormData, name: string, { max = 30, maxLength = 4
 	const tags: string[] = [];
 	for (const raw of form.getAll(name)) {
 		if (typeof raw !== 'string') continue;
-		const tag = raw.trim().replace(/\s+/g, ' ').slice(0, maxLength);
+		const tag = stripNul(raw).trim().replace(/\s+/g, ' ').slice(0, maxLength);
 		if (!tag || seen.has(tag.toLowerCase())) continue;
 		seen.add(tag.toLowerCase());
 		tags.push(tag);
@@ -79,7 +103,7 @@ export function readJson<T = unknown>(form: FormData, name: string, fallback: T 
 	const raw = form.get(name);
 	if (typeof raw !== 'string' || !raw) return fallback;
 	try {
-		return JSON.parse(raw) as T;
+		return parseSubmittedJson(raw) as T;
 	} catch {
 		return fallback;
 	}
@@ -106,7 +130,7 @@ export function readRows<K extends string>(
 		let filled = false;
 		for (const key of keys) {
 			const raw = (item as Record<string, unknown>)[key];
-			const text = typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim().slice(0, maxLength) : '';
+			const text = typeof raw === 'string' || typeof raw === 'number' ? stripNul(String(raw)).trim().slice(0, maxLength) : '';
 			row[key] = text;
 			if (text) filled = true;
 		}

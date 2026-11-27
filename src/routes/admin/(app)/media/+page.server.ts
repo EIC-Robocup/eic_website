@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { asc, count, desc, eq } from 'drizzle-orm';
-import { readText } from '#lib/components/admin/form-data.ts';
+import { readText, stripNul } from '#lib/components/admin/form-data.ts';
 import { logActivity } from '#lib/server/activity.ts';
 import { requireEditor } from '#lib/server/auth.ts';
 import { db } from '#lib/server/db/index.ts';
@@ -48,7 +48,7 @@ export const actions = {
 		const form = await request.formData();
 		const id = readText(form, 'id', { max: 60 });
 		const raw = form.get('alt');
-		const alt = typeof raw === 'string' ? raw.replace(/\s+/g, ' ').trim() : '';
+		const alt = typeof raw === 'string' ? stripNul(raw).replace(/\s+/g, ' ').trim() : '';
 		if (!isUuid(id)) return fail(400, { message: 'Pick a file first.' });
 		if (alt.length > ALT_MAX) {
 			return fail(400, { message: 'Check the alt text.', errors: { alt: `Keep it under ${ALT_MAX} characters.` } });

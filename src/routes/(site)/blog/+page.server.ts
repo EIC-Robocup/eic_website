@@ -7,8 +7,9 @@ import type { PageServerLoad } from './$types';
 const PAGE_SIZE = 9;
 const MAX_PAGE = 40;
 
+/** A trimmed query parameter, without NUL bytes (Postgres refuses them in text). */
 const param = (url: URL, key: string, max: number) =>
-	url.searchParams.get(key)?.trim().slice(0, max) || null;
+	url.searchParams.get(key)?.replace(/\u0000/g, '').trim().slice(0, max) || null;
 
 export const load: PageServerLoad = async ({ url }) => {
 	const filters: BlogFilters = {
