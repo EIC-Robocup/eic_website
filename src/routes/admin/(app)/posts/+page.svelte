@@ -174,7 +174,7 @@
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<Tabs.List
 			aria-label="Filter by status"
-			class="h-auto w-full max-w-full justify-start gap-1 overflow-x-auto rounded-[8px] border border-line bg-surface-000 p-1 group-data-horizontal/tabs:h-auto sm:w-fit"
+			class="grid h-auto w-full grid-cols-2 gap-1 rounded-[8px] border border-line bg-surface-000 p-1 group-data-horizontal/tabs:h-auto sm:inline-flex sm:w-fit sm:justify-start"
 		>
 			{#each FILTERS as item (item.value)}
 				<Tabs.Trigger
