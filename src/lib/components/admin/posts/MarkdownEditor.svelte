@@ -853,7 +853,7 @@
 				aria-describedby={[error ? errorId : null, hintId].filter(Boolean).join(' ')}
 				aria-invalid={error ? 'true' : undefined}
 				class={[
-					'h-full min-h-0 resize-none rounded-none border-0 bg-surface-100 py-5 font-mono text-[14px] leading-6 text-ink shadow-none [field-sizing:fixed] focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset md:text-[14px] dark:bg-surface-100',
+					'h-full min-h-0 resize-none rounded-none border-0 bg-surface-100 py-5 font-mono text-[14px] [font-variant-ligatures:none] leading-6 text-ink shadow-none [field-sizing:fixed] focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset md:text-[14px] dark:bg-surface-100',
 					fullscreen && mode === 'write' ? 'px-[max(20px,calc((100%-76ch)/2))]' : 'px-5'
 				].join(' ')}
 				onkeydown={ontextkeydown}
