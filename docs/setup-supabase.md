@@ -214,17 +214,23 @@ The site limits sign in emails itself as well, so nobody can use up the email qu
 the editors out. The limits hold across all of Vercel's servers (they are counted in the
 `rate_limits` table):
 
-- Email links: 5 requests per network every 10 minutes, 3 per email address an hour, and at
-  most 20 emails an hour for the whole site. Everyone on one network (for example campus
-  Wi-Fi) shares the first limit.
+- Email links: 5 requests per network every 10 minutes, one per email address a minute and 3
+  an hour, and at most 20 emails an hour for the whole site. Everyone on one network (for
+  example campus Wi-Fi) shares the first limit. Supabase itself sends one email per address a
+  minute, so the site's own one a minute limit refuses a quick repeat before it reaches
+  Supabase.
 - 6-digit codes: 10 tries per network and 5 per email address every 10 minutes.
-- If Supabase itself refuses an email for its own limit, the site stops sending email links
-  for the rest of that hour.
+- If Supabase refuses an email for its project limit ("emails per hour", step 3), the site stops
+  sending email links for the rest of that hour. Any other refusal from Supabase is logged and
+  affects only that one email.
 - Over an email limit, the sign in page says "Too many sign in emails were asked for just now.
-  Try again later, or continue with GitHub or Google." Over a code limit it says "Too many
-  tries. Wait a few minutes, then try again." GitHub and Google sign in have no such limit.
-- The email form always takes about 1.5 seconds to answer, invited or not, so it never
-  reveals who is invited.
+  Try again later, or continue with GitHub or Google." A second request for the same address
+  within a minute says "A sign in email was asked for this address less than a minute ago."
+  Over a code limit it says "Too many tries. Wait a few minutes, then try again." GitHub and
+  Google sign in have no such limit.
+- The email form answers every address the same way, invited or not: the same message, the
+  same cookies and headers, and always about 1.5 seconds, even when Supabase refuses the
+  email. So the form doesn't reveal who is invited.
 
 Raising Supabase's "emails per hour" doesn't raise the site's 20. That number is
 `EMAIL_LIMITS` in `src/routes/admin/login/+page.server.ts`; keep it below Supabase's limit.

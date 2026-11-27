@@ -15,6 +15,8 @@ import type { Actions, PageServerLoad } from './$types';
 const SENT_MESSAGE = 'If this email is invited, a sign in link is on its way.';
 const RATE_LIMITED =
 	'Too many sign in emails were asked for just now. Try again later, or continue with GitHub or Google.';
+const TOO_SOON =
+	'A sign in email was asked for this address less than a minute ago. Check your inbox, or try again in a minute.';
 const TOO_MANY_CODES = 'Too many tries. Wait a few minutes, then try again.';
 const NOT_CONFIGURED = 'Sign in is not set up on this site yet.';
 
@@ -33,9 +35,16 @@ const EMAIL_LIMITS = {
 	/** Requests for one email address. */
 	address: { max: 3, windowSeconds: 60 * 60 },
 	/**
+	 * One request per email address a minute. Supabase refuses a second email to an address
+	 * within 60 seconds, so without this a quick repeat would reach Supabase only for invited
+	 * addresses, and its refusal looks like the project's email limit.
+	 */
+	interval: { max: 1, windowSeconds: 65 },
+	/**
 	 * Emails the site sends in all, kept under the Supabase project's email limit (30 an hour
 	 * with custom SMTP), so a flood can't use up the quota and lock every editor out. Only real
-	 * sends count; a 429 from Supabase uses up the rest of the hour.
+	 * sends count; Supabase refusing a send for its project email limit uses up the rest of the
+	 * hour.
 	 */
 	sends: { max: 20, windowSeconds: 60 * 60 }
 } satisfies Record<string, Limit>;
@@ -142,18 +151,21 @@ export const actions = {
 		if (!locals.supabase) return fail(503, { stage: 'email' as const, email, message: NOT_CONFIGURED });
 
 		// Every limit before the invite lookup: the same refusal for every address.
-		const [clientKey, addressKey] = await Promise.all([
+		const [clientKey, addressKey, intervalKey] = await Promise.all([
 			limitKey('login-client', clientAddress(getClientAddress)),
-			limitKey('login-email', email)
+			limitKey('login-email', email),
+			limitKey('login-email-interval', email)
 		]);
-		const [clientOver, addressOver, sendsSpent] = await Promise.all([
+		const [clientOver, addressOver, tooSoon, sendsSpent] = await Promise.all([
 			hit(clientKey, EMAIL_LIMITS.client),
 			hit(addressKey, EMAIL_LIMITS.address),
+			hit(intervalKey, EMAIL_LIMITS.interval),
 			isSpent(SENDS_KEY, EMAIL_LIMITS.sends)
 		]);
 		if (clientOver || addressOver || sendsSpent) {
 			return fail(429, { stage: 'email' as const, email, message: RATE_LIMITED });
 		}
+		if (tooSoon) return fail(429, { stage: 'email' as const, email, message: TOO_SOON });
 
 		let invited: boolean;
 		try {
@@ -168,9 +180,12 @@ export const actions = {
 		}
 
 		rememberNext(cookies, next);
-		// Uninvited addresses go through a client whose requests never leave the server, so
-		// both answers carry the same cookies (the PKCE code verifier) and headers.
-		const client = invited ? locals.supabase : (createRequestClient(event, { offline: true }) ?? locals.supabase);
+		// Uninvited addresses go through a client whose requests never leave the server, and
+		// invited ones through a client that keeps its PKCE verifier cookies even when Supabase
+		// refuses the email, so both answers carry the same cookies and headers.
+		const client =
+			createRequestClient(event, invited ? { keepVerifiersAfterSend: true } : { offline: true }) ??
+			locals.supabase;
 		// No query string: the email template appends ?token_hash=... to this URL.
 		const { error } = await client.auth.signInWithOtp({
 			email,
@@ -178,9 +193,11 @@ export const actions = {
 		});
 		if (invited && !error) {
 			await hit(SENDS_KEY, EMAIL_LIMITS.sends);
-		} else if (error?.status === 429) {
-			// Supabase's own email limit: refuse everyone until the hour is up, but answer this
-			// request as usual, since only invited addresses ever reach Supabase.
+		} else if (error?.status === 429 && !/after \d+ seconds?/i.test(error.message)) {
+			// Supabase's project email limit: refuse everyone until the hour is up, but answer
+			// this request as usual, since only invited addresses ever reach Supabase. Its other
+			// 429, "you can only request this after N seconds" (one email per address a minute),
+			// is about this address only, so it is handled like any other send error below.
 			console.error('Supabase refused the sign in email (rate limited)', error.code ?? error.name);
 			await spend(SENDS_KEY, EMAIL_LIMITS.sends);
 		} else if (error) {

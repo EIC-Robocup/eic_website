@@ -135,7 +135,7 @@ per /64.
 
 | What | Limits | Where |
 | --- | --- | --- |
-| Sign in email links | 5 per network per 10 min, 3 per address per hour, 20 sent per hour for the whole site. A 429 from Supabase pauses email links for the rest of the hour. The form always takes about 1.5 s | `src/routes/admin/login/+page.server.ts` |
+| Sign in email links | 5 per network per 10 min, 1 per address per minute and 3 per hour, 20 sent per hour for the whole site. Supabase refusing an email for its project email limit pauses email links for the rest of the hour. The form always takes about 1.5 s | `src/routes/admin/login/+page.server.ts` |
 | Sign in codes | 10 per network and 5 per address per 10 min | same file |
 | Contact form | 5 per network per 10 min, 20 per email address per day, 60 for the whole site per hour (then the form points to the club's email). The form must be sent between 3 seconds and 24 hours after the page was rendered | `src/routes/(site)/about/` |
 
