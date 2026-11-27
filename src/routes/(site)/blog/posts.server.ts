@@ -5,8 +5,7 @@
  *   phrase, newest first. `listPublishedPosts` in #lib/server/queries/site.ts has no tag or
  *   text filter.
  * - getLivePost: one post with its linked project and three related posts. The post page
- *   renders the body itself with renderPost(), so this returns the Markdown, not HTML
- *   (getPublishedPostBySlug renders it again, and fails for posts without a project).
+ *   renders the body itself with renderPost(), so this returns the Markdown, not HTML.
  *
  * The "live" rule is the same as site.ts: status published and published_at not in the future.
  */

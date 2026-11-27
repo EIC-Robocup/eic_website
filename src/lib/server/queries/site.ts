@@ -27,7 +27,8 @@ import {
 	type Publication,
 	type Sponsor
 } from '#lib/server/db/schema.ts';
-import { extractHeadings, readingMinutes, renderMarkdown } from '#lib/server/markdown.ts';
+// Only the reading time: the renderer (Shiki, KaTeX, sanitize-html) loads on post pages alone.
+import { readingMinutes } from '#lib/server/markdown/reading.ts';
 import { displayRole, initials } from '#lib/content/labels.ts';
 import type { SiteCounts } from '#lib/content/stats.ts';
 
@@ -396,22 +397,6 @@ export type PostCard = {
 	href: string;
 };
 
-export type PostHeading = { id: string; text: string; depth: number };
-
-export type PostDetail = PostCard & {
-	/** The Markdown source. */
-	body: string;
-	/** Rendered and sanitised HTML, safe for {@html}. */
-	html: string;
-	/** h2 and h3 headings, for a table of contents. */
-	headings: PostHeading[];
-	updatedAt: Date;
-	/** The linked project, when it is published. */
-	project: { slug: string; title: string } | null;
-	/** Three other published posts, same category first, then same project, then newest. */
-	related: PostCard[];
-};
-
 /** Published and not scheduled for later. */
 const isLive = () =>
 	and(eq(posts.status, 'published'), isNotNull(posts.publishedAt), lte(posts.publishedAt, sql`now()`));
@@ -495,41 +480,6 @@ export async function countPublishedPosts(category?: PostCategory): Promise<numb
 		.from(posts)
 		.where(and(isLive(), category ? eq(posts.category, category) : undefined));
 	return row?.n ?? 0;
-}
-
-/** A published post with its rendered HTML, headings, linked project and three related posts. */
-export async function getPublishedPostBySlug(slug: string): Promise<PostDetail | null> {
-	const [row] = await db
-		.select({
-			...postCardColumns,
-			updatedAt: posts.updatedAt,
-			projectSlug: projects.slug,
-			projectTitle: projects.title
-		})
-		.from(posts)
-		.leftJoin(projects, and(eq(posts.projectId, projects.id), eq(projects.published, true)))
-		.where(and(eq(posts.slug, slug), isLive()))
-		.limit(1);
-	if (!row) return null;
-
-	const { projectSlug, projectTitle, updatedAt, ...cardRow } = row;
-	const card = toPostCard(cardRow);
-	// Same category first, then same project (only when the post has one: Postgres rejects a
-	// constant like `false` in ORDER BY), then newest.
-	const order = [desc(sql`(${posts.category} = ${row.category})`)];
-	if (row.projectId) order.push(desc(sql`coalesce(${posts.projectId} = ${row.projectId}, false)`));
-	order.push(desc(posts.publishedAt));
-	const related = await selectPostCards(ne(posts.id, row.id), { orderBy: order, limit: 3 });
-
-	return {
-		...card,
-		body: row.body,
-		html: renderMarkdown(row.body),
-		headings: extractHeadings(row.body),
-		updatedAt,
-		project: projectSlug && projectTitle ? { slug: projectSlug, title: projectTitle } : null,
-		related
-	};
 }
 
 /* ------------------------------------------------------------------------- */

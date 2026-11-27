@@ -10,7 +10,7 @@
 import katex from 'katex';
 import type { TokenizerAndRendererExtension, Tokens } from 'marked';
 import type { RenderContext } from './context.ts';
-import { findLineStart } from './extensions.ts';
+import { mathBlockSyntax, mathInlineSyntax } from './math-syntax.ts';
 import { escapeHtml } from './util.ts';
 
 /** Longest formula we render (KaTeX also caps macro expansion). */
@@ -48,42 +48,13 @@ function displayBlock(ctx: RenderContext, tex: string): string {
 export function mathExtensions(ctx: RenderContext): TokenizerAndRendererExtension[] {
 	return [
 		{
-			name: 'mathBlock',
-			level: 'block',
-			start(src) {
-				return findLineStart(src, '$$', /^ {0,3}\$\$/);
-			},
-			tokenizer(src) {
-				const match = /^ {0,3}\$\$((?:\\[\s\S]|[^\\$])+?)\$\$[ \t]*(?:\n+|$)/.exec(src);
-				if (!match) return undefined;
-				const text = match[1].trim();
-				if (!text) return undefined;
-				return { type: 'mathBlock', raw: match[0], text };
-			},
+			...mathBlockSyntax,
 			renderer(token) {
 				return displayBlock(ctx, (token as Tokens.Generic).text as string);
 			}
 		},
 		{
-			name: 'mathInline',
-			level: 'inline',
-			start(src) {
-				const index = src.indexOf('$');
-				return index < 0 ? undefined : index;
-			},
-			tokenizer(src) {
-				if (src[0] !== '$') return undefined;
-				// $$...$$ inside a line: display style.
-				let match = /^\$\$(?!\$)((?:\\[\s\S]|[^\\$])+?)\$\$(?!\$)/.exec(src);
-				if (match && match[1].trim() && !/\n[ \t]*\n/.test(match[1])) {
-					return { type: 'mathInline', raw: match[0], text: match[1].trim(), display: true };
-				}
-				match = /^\$(?![\s$])((?:\\[\s\S]|[^\\$])+?)(?<![\s\\])\$(?![\d$])/.exec(src);
-				if (match && !/\n[ \t]*\n/.test(match[1])) {
-					return { type: 'mathInline', raw: match[0], text: match[1], display: false };
-				}
-				return undefined;
-			},
+			...mathInlineSyntax,
 			renderer(token) {
 				const { text, display } = token as Tokens.Generic & { text: string; display: boolean };
 				ctx.features.math = true;

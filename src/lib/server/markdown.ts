@@ -5,6 +5,7 @@ import { embedHtml, figcaption, mediaKind, modelHtml, parseEmbedUrl, videoHtml, 
 import { blockExtensions, renderFootnotes } from './markdown/extensions.ts';
 import { highlightLines, resolveLanguage } from './markdown/highlight.ts';
 import { mathExtensions, renderMathFence } from './markdown/math.ts';
+import { cleanSource, minutesFor, tokenWords } from './markdown/reading.ts';
 import { sanitizeFragment, sanitizeMain, stripTags } from './markdown/sanitize.ts';
 import { countWords, escapeHtml, isExternalUrl, isSafeUrl, pad2, sizeFromUrl, slugify } from './markdown/util.ts';
 
@@ -47,8 +48,6 @@ export type RenderOptions = {
 	 */
 	figureStart?: number;
 };
-
-const WORDS_PER_MINUTE = 220;
 
 /** In-body images are at most the 720px text column wide. */
 const BODY_SIZES = '(min-width: 784px) 720px, calc(100vw - 32px)';
@@ -321,26 +320,6 @@ function createMarked(ctx: RenderContext): Marked {
 	return marked;
 }
 
-/** Leaf text of a token, for the word count. */
-function tokenWords(token: Token): number {
-	const t = token as Tokens.Generic;
-	switch (t.type) {
-		case 'text':
-		case 'escape':
-		case 'codespan':
-			return Array.isArray(t.tokens) && t.tokens.length ? 0 : countWords(t.text ?? '');
-		case 'code':
-			return countWords(t.text ?? '');
-		case 'mathInline':
-		case 'mathBlock':
-			return 1;
-		case 'html':
-			return countWords(stripTags(t.text ?? ''));
-		default:
-			return 0;
-	}
-}
-
 function lex(marked: Marked, source: string): Token[] {
 	return marked.lexer(source);
 }
@@ -355,18 +334,6 @@ function spliceFragments(ctx: RenderContext, html: string): string {
 			tag !== undefined ? tag.replace(stray, '') : (text ?? '').replace(placeholder, (_m, i: string) => fragments[Number(i)] ?? '')
 		)
 		.replace(stray, '');
-}
-
-function cleanSource(markdown: string | null | undefined): string {
-	return (
-		(markdown ?? '')
-			// Private-use characters are reserved for fragment placeholders (context.ts).
-			.replace(/[\uE000\uE001]/g, '')
-			.replace(/\r\n?/g, '\n')
-			// Marked recurses once per quote level; cap the nesting so a line of ">>>>..." can't
-			// overflow the stack.
-			.replace(/^((?:[ \t]*>){12})(?:[ \t]*>)+/gm, '$1')
-	);
 }
 
 /** Last resort when rendering throws: the text as escaped paragraphs. */
@@ -415,7 +382,7 @@ export function renderPost(markdown: string, opts: RenderOptions = {}): Rendered
 		result = {
 			html,
 			headings: ctx.headings,
-			readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+			readingMinutes: minutesFor(words),
 			words,
 			features: ctx.features
 		};
@@ -426,7 +393,7 @@ export function renderPost(markdown: string, opts: RenderOptions = {}): Rendered
 		result = {
 			html: plainFallback(source),
 			headings: [],
-			readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+			readingMinutes: minutesFor(words),
 			words,
 			features: { math: false, mermaid: false, model: false, video: false, embed: false }
 		};
@@ -476,26 +443,8 @@ export function markdownToText(source: string): string {
 		.trim();
 }
 
-/** Words in a post (Thai counted by word, not by space). */
-export function countPostWords(source: string): number {
-	const clean = cleanSource(source);
-	try {
-		const ctx = new RenderContext('text');
-		const marked = createMarked(ctx);
-		let words = 0;
-		marked.walkTokens(lex(marked, clean), (token) => {
-			words += tokenWords(token);
-		});
-		return words;
-	} catch {
-		return countWords(clean);
-	}
-}
-
-/** Reading time at 220 words a minute, at least one minute. Cheap: lexes, no rendering. */
-export function readingMinutes(source: string): number {
-	return Math.max(1, Math.round(countPostWords(source) / WORDS_PER_MINUTE));
-}
+/** Word counts and reading time without the renderer: see ./markdown/reading.ts. */
+export { countPostWords, readingMinutes } from './markdown/reading.ts';
 
 /** Headings (h2 and h3) for a table of contents. */
 export function extractHeadings(source: string): Heading[] {
